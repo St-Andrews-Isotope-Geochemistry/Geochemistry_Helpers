@@ -1,19 +1,19 @@
-classdef Collater<handle
-    % Collater allows properties of objects to be collected into an array, and is built to be inherited from only
+classdef Collator<handle
+    % Collator allows properties of objects to be collected into an array, and is built to be inherited from only
     %
-    % Collater Properties
+    % Collator Properties
     %   None
     %
-    % Collater Methods
+    % Collator Methods
     %   collate - Iterates over an array of objects to extract the specified property
     %   assignToAll - Iterates over an array of objects to assign a value or object to the specified property
     %   assignToEach - Iterates over an array of objects and an array of values or objects to assign the latter to the former
     %
-    % Collater Origin
+    % Collator Origin
     %   Written by - Ross Whiteford 1st October 2020
     %   Affiliation - University of St Andrews
     %   Contact - rdmw1@st-andrews.ac.uk
-    %   Licensing - Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0), https://creativecommons.org/licenses/by-nc-sa/4.0/    
+    %   Licensing - Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0), https://creativecommons.org/licenses/by-nc-sa/4.0/
     properties
     end
     methods
@@ -49,7 +49,7 @@ classdef Collater<handle
                 else
                     self(index).(parameter) = copy(values(index));
                 end
-            end            
+            end
         end
     end
 end
