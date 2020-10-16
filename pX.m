@@ -1,4 +1,4 @@
-classdef pX<handle&Collater&matlab.mixin.Copyable
+classdef pX<handle&Collator&matlab.mixin.Copyable
     % pX represents a value and its corresponding p value (-log10(value))
     %
     % pX Properties

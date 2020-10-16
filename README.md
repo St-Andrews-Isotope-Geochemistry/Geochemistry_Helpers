@@ -51,4 +51,40 @@ The ```pX``` class is very simple. It contains only two properties, and no bespo
 ```value``` - this is the raw concentration (equivalent to [H<sup>+</sup>])  
 ```pValue``` - this is the negative base 10 logarithm of ```value```
 
-```pX``` objects can be added and subtracted - this is done based on the concentration ```value``` not the ```pValue```. To add two ```pValues``` use: ```pX_Object(1).pValue + pX_Object(2).pValue```
+```MATLAB
+pH = pX(7);
+```
+
+
+```pX``` objects can be added and subtracted - this is done based on the concentration ```value``` not the ```pValue```. To add two ```pValues``` use: ```pX_Object(1).pValue + pX_Object(2).pValue```.
+
+## delta
+The ```delta``` object is used to represent isotope ratios in delta notation. It allows easy conversion between delta notation, raw isotope ratio and isotope fraction.
+Delta notation is defined as follows:  
+&delta;<sup>n</sup>X = ((<sup><sup>n</sup>X</sup>&frasl;<sub><sup>m</sup>X<sub>sample</sub></sub>&divide;<sup><sup>n</sup>X</sup>&frasl;<sub><sup>m</sup>X<sub>standard</sub></sub>)-1&times;1000  
+where m and n are two isotopes of element X.
+
+This means that in order to convert the raw isotope ratio (<sup><sup>n</sup>X</sup>&frasl;<sub><sup>m</sup>X<sub>sample</sub></sub>) into delta notation, the isotope ratio of the standard (<sup><sup>n</sup>X</sup>&frasl;<sub><sup>m</sup>X<sub>standard</sub></sub>) is required.
+
+There are two input values to the constructor, the first of which is the standard (and is required), the second of which is the delta value (and is optional). The standard can be specified as a number or a string. If specified as a string, the constructor will search a map defined in the class file for a matching entry. Currently the only values available in the map are for boron (<sup><sup>11</sup>B</sup>&frasl;<sub><sup>10</sup>B<sub>standard</sub></sub>), and can be accessed by "B", "Boron" or "SRM951".  
+The second value, if specified, must be a number or NaN. If not specified the default is NaN.
+
+Example usage:
+```MATLAB
+delta_object = delta(10);        % Create a delta object with standard ratio 10/1 and sample ratio NaN
+delta_object = delta(10,5);      % Create a delta object with standard ratio 10/1 and sample delta 5‰
+disp(delta_object.ratio);        % Show the isotope ratio
+```
+
+Using a string standard:
+```MATLAB
+delta_object = delta("Boron");   % Create a delta object with standard ratio for boron
+delta_object = delta("Boron",29); % Create a delta object with standard ratio for boron and sample delta 29‰
+disp(delta_object.ratio);        % Show the isotope ratio
+```
+
+Converting a standard ratio to delta notation:
+```MATLAB
+delta_object = delta(1,NaN);       
+delta_object.ratio = 2;          % Convert a ratio relative to 1
+```
