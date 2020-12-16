@@ -42,19 +42,24 @@ classdef delta<handle&Collator&matlab.mixin.Copyable
             % delta - Constructor
             %   input - The standard to be used, either as a string known by the known_standards map, or an isotope ratio value
             %           The delta value (optional)
-            if nargin<2
-                value = NaN;
-            end
-            if isstring(standard)||ischar(standard)
-                if isKey(self.known_standards,standard)
-                    self.standard = self.known_standards(standard);
-                else
-                    error("Unknown standard, possible values are: "+strjoin(string(keys(self.known_standards)),", "));
+            if nargin~=0
+                if nargin<2
+                    value = NaN;
                 end
+                if isstring(standard)||ischar(standard)
+                    if isKey(self.known_standards,standard)
+                        self.standard = self.known_standards(standard);
+                    else
+                        error("Unknown standard, possible values are: "+strjoin(string(keys(self.known_standards)),", "));
+                    end
+                else
+                    self.standard = standard;
+                end            
+                self.value = value;
             else
-                self.standard = standard;
-            end            
-            self.value = value;
+                self.value = NaN;
+                self.standard = NaN;
+            end
         end
         
         % Getters
@@ -71,6 +76,17 @@ classdef delta<handle&Collator&matlab.mixin.Copyable
         end
         function set.fraction(self,input)
             self.ratio = input/(1-input);
+        end
+        function set.standard(self,standard)
+            if isstring(standard)||ischar(standard)
+                if isKey(self.known_standards,standard)
+                    self.standard = self.known_standards(standard);
+                else
+                    error("Unknown standard, possible values are: "+strjoin(string(keys(self.known_standards)),", "));
+                end
+            else
+                self.standard = standard;
+            end
         end
         
         % Functions
