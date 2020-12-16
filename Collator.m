@@ -31,7 +31,7 @@ classdef Collator<handle
             %       input - The name of the parameter to assign to as a string
             %               The value/object to assign to the parameter
             for index = 1:numel(self)
-                if isnumeric(value)
+                if isnumeric(value) || isstring(value)
                     self(index).(parameter) = value;
                 else
                     self(index).(parameter) = copy(value);
