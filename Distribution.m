@@ -21,7 +21,9 @@ classdef Distribution < handle&Collator
                 self.values = NaN;
             else
                 self.type = type;
-                self.values = values;
+                if self.type~="manual"
+                    self.values = values;
+                end
                 if type=="flat"
                     assert(numel(values)==2,"Number of values must be 2");
                     assert(values(1)<=values(2),"The first value must be less than or equal to the second")
