@@ -24,7 +24,7 @@ classdef Sampler < handle&Distribution
                 end
             end
         end
-        function samples = getSamples(self,number_of_samples)
+        function [self,samples] = getSamples(self,number_of_samples)
             if self.method=="monte_carlo"
                 samples = self.getMonteCarloSamples(number_of_samples);
                 self.samples = samples;
@@ -119,12 +119,28 @@ classdef Sampler < handle&Distribution
                 left_edge(end) = right_edge(end);
             end
             right_edge = [right_edge,last_right_edge];
-            edges = [left_edge;right_edge];
+            edges = [left_edge;right_edge];            
             samples = median(edges,1);
+            if numel(samples)==number_of_samples+1
+                samples = samples(1:end-1);
+            end
         end
         
-        function histogram(self)
-            histogram(self.samples,self.bin_edges);
+        function [self,samples] = shuffle(self)
+            [~,sort_by] = sort(rand(numel(self.samples),1));
+            self.samples = self.samples(sort_by);
+            samples = self.samples;
+        end
+        function distribution = distributionFromSamples(self,bin_edges)
+            distribution = Distribution(bin_edges,histcounts(self.samples,bin_edges));
+        end
+        
+        function histogram(self,number_of_bins)
+            if nargin==1
+                histogram(self.samples,self.bin_edges,'Normalization','Probability','EdgeColor','None');
+            elseif nargin==2
+                histogram(self.samples,number_of_bins,'Normalization','Probability');
+            end
         end
     end
 end
