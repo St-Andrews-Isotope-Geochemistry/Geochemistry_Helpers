@@ -97,14 +97,14 @@ classdef Sampler < handle&Distribution
                     else
                         % This bin needs to be split multiple times
                         % Get the first one
-                        fraction_in = (self.probabilities(bin_index)-difference_value)/self.probabilities(bin_index);
-                        right_edge = [right_edge,self.bin_edges(bin_index)+((self.bin_edges(bin_index+1)-self.bin_edges(bin_index))*fraction_in)];
-                        left_edge = [left_edge,right_edge(end)];
+%                         fraction_in = samples_every; %(self.probabilities(bin_index)-difference_value)/self.probabilities(bin_index);
+%                         right_edge = [right_edge,self.bin_edges(bin_index)+((self.bin_edges(bin_index+1)-self.bin_edges(bin_index))*fraction_in)];
+%                         left_edge = [left_edge,right_edge(end)];
                         
-                        remaining_bin_width = (1-fraction_in)*(self.bin_edges(bin_index+1)-self.bin_edges(bin_index));
-                        sample_distances = linspace(1-remaining_bin_width,1,current_number_of_samples+1);
+                        remaining_bin_width = (self.bin_edges(bin_index+1)-self.bin_edges(bin_index));
+                        sample_distances = linspace(0,1,current_number_of_samples+1);
                         actual_sample_distances = sample_distances(2:end-1);
-                        for sample_distance_index = 1:numel(actual_sample_distances);
+                        for sample_distance_index = 1:numel(actual_sample_distances)
                             fraction_in = actual_sample_distances(sample_distance_index);
                             right_edge = [right_edge,self.bin_edges(bin_index)+((self.bin_edges(bin_index+1)-self.bin_edges(bin_index))*fraction_in)];
                             left_edge = [left_edge,right_edge(end)];
@@ -135,11 +135,13 @@ classdef Sampler < handle&Distribution
             distribution = Distribution(bin_edges,histcounts(self.samples,bin_edges));
         end
         
-        function histogram(self,number_of_bins)
+        function histogram(self,number_of_bins,normalisation)
             if nargin==1
                 histogram(self.samples,self.bin_edges,'Normalization','Probability','EdgeColor','None');
             elseif nargin==2
                 histogram(self.samples,number_of_bins,'Normalization','Probability');
+            elseif nargin==3
+                histogram(self.samples,number_of_bins,'Normalization',normalisation);
             end
         end
     end
