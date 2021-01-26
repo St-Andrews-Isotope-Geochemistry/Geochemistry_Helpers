@@ -68,5 +68,8 @@ classdef Distribution < handle&Collator
         function output = create(type,value)
             output = Distribution(type,value);
         end
+        function output = fromSamples(bin_edges,samples)
+            output = Distribution(bin_edges,"manual",histcounts(samples,bin_edges,'Normalization','Probability'));
+        end
     end
 end
