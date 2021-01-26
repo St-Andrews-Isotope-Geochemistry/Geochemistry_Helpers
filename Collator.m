@@ -17,13 +17,30 @@ classdef Collator<handle
     properties
     end
     methods
-        function output = collate(self,parameter)
+        function output = collate(self,parameter,axis)
             %   collate - Iterates over an array of objects to extract the specified property
             %       input - The name of the parameter to extract as a string
             %       output - Is an array of values or objects
-            output = [];
-            for index = 1:numel(self)
-                output = [output,self(index).(parameter)];
+            if nargin<3
+                axis = 2;
+            end
+            size_of = num2cell(size(self));
+            size_of_parameter = num2cell(size(self(1).(parameter)));
+            output(size_of{:},size_of_parameter{:}) = self(1).(parameter);
+            if nargin<3
+                for index = 1:numel(self)
+                    output(index) = self(index).(parameter);
+                end
+            else
+                if axis==2
+                    for index = 1:numel(self)
+                        output = [output,self(index).(parameter)];
+                    end
+                elseif axis==1
+                    for index = 1:numel(self)
+                        output = [output;self(index).(parameter)];
+                    end
+                end
             end
         end
         function assignToAll(self,parameter,value)
