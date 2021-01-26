@@ -25,14 +25,16 @@ classdef Sampler < handle&Distribution
             end
         end
         function [self,samples] = getSamples(self,number_of_samples)
-            if self.method=="monte_carlo"
-                samples = self.getMonteCarloSamples(number_of_samples);
-                self.samples = samples;
-            elseif self.method=="latin_hypercube"
-                samples = self.getMedianLatinHypercubeSamples(number_of_samples);
-                self.samples = samples;
-            else
-                error("Method unknown");
+            for self_index = 1:numel(self);
+                if self(self_index).method=="monte_carlo"
+                    samples = self(self_index).getMonteCarloSamples(number_of_samples);
+                    self(self_index).samples = samples;
+                elseif self(self_index).method=="latin_hypercube"
+                    samples = self(self_index).getMedianLatinHypercubeSamples(number_of_samples);
+                    self(self_index).samples = samples;
+                else
+                    error("Method unknown");
+                end
             end
         end
         
@@ -103,7 +105,7 @@ classdef Sampler < handle&Distribution
                         
                         remaining_bin_width = (self.bin_edges(bin_index+1)-self.bin_edges(bin_index));
                         sample_distances = linspace(0,1,current_number_of_samples+1);
-                        actual_sample_distances = sample_distances(2:end-1);
+                        actual_sample_distances = sample_distances(1:end-1);
                         for sample_distance_index = 1:numel(actual_sample_distances)
                             fraction_in = actual_sample_distances(sample_distance_index);
                             right_edge = [right_edge,self.bin_edges(bin_index)+((self.bin_edges(bin_index+1)-self.bin_edges(bin_index))*fraction_in)];
@@ -127,9 +129,11 @@ classdef Sampler < handle&Distribution
         end
         
         function [self,samples] = shuffle(self)
-            [~,sort_by] = sort(rand(numel(self.samples),1));
-            self.samples = self.samples(sort_by);
-            samples = self.samples;
+            for self_index = 1:numel(self);
+                [~,sort_by] = sort(rand(numel(self(self_index).samples),1));
+                self(self_index).samples = self(self_index).samples(sort_by);
+                samples = self(self_index).samples;
+            end
         end
         function distribution = distributionFromSamples(self,bin_edges)
             distribution = Distribution(bin_edges,histcounts(self.samples,bin_edges));
