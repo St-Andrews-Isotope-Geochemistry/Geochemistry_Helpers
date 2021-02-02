@@ -1,4 +1,4 @@
-classdef delta<handle&Collator&matlab.mixin.Copyable
+classdef delta<handle&Geochemistry_Helpers.Collator&matlab.mixin.Copyable
     % delta represents isotopes ratios in delta form, with associated standards, fractions and ratios
     %
     % delta Properties

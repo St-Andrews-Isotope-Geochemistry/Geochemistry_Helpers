@@ -1,4 +1,4 @@
-classdef Distribution < handle&Collator
+classdef Distribution < handle&Geochemistry_Helpers.Collator
     properties
         bin_edges
         probabilities
