@@ -1,4 +1,4 @@
-classdef Sampler < handle&Distribution
+classdef Sampler < handle&Geochemistry_Helpers.Distribution
     properties
         method
         samples
@@ -25,7 +25,7 @@ classdef Sampler < handle&Distribution
             end
         end
         function [self,samples] = getSamples(self,number_of_samples)
-            for self_index = 1:numel(self);
+            for self_index = 1:numel(self)
                 if self(self_index).method=="monte_carlo"
                     samples = self(self_index).getMonteCarloSamples(number_of_samples);
                     self(self_index).samples = samples;
