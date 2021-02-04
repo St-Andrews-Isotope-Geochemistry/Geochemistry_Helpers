@@ -20,6 +20,7 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator
                 self.type = NaN;
                 self.values = NaN;
             else
+                type = lower(type);
                 self.type = type;
                 if self.type~="manual"
                     self.values = values;
@@ -69,7 +70,7 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator
             output = Distribution(type,value);
         end
         function output = fromSamples(bin_edges,samples)
-            output = Distribution(bin_edges,"manual",histcounts(samples,bin_edges,'Normalization','Probability'));
+            output = Geochemistry_Helpers.Distribution(bin_edges,"manual",histcounts(samples,bin_edges,'Normalization','Probability'));
         end
     end
 end
