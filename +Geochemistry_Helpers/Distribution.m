@@ -64,12 +64,33 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator
         function midpoints = get.bin_midpoints(self)
             midpoints = self.bin_edges(1:end-1) + 0.5*(self.bin_edges(2:end)-self.bin_edges(1:end-1));
         end
+        
+        function output = quantile(self,value)
+            cumulative_probabilities = [0,cumsum(self.probabilities)];
+            values = cumulative_probabilities-value;
+            values_sign = sign(values);
+            crossover = logical(values_sign(1:end-1)-values_sign(2:end));
+            locations = logical([crossover,0]+[0,crossover]);
+            crossover_bin_edges = self.bin_edges(locations);
+            cumulative_values = cumulative_probabilities(locations);
+            distances = abs(value-cumulative_values);
+            weights = 1-distances./sum(distances);
+            output = sum(weights.*crossover_bin_edges);
+        end
     end
     methods (Static)
         function output = create(type,value)
             output = Distribution(type,value);
         end
         function output = fromSamples(bin_edges,samples)
+            if isnan(bin_edges)
+                value_range = range(samples);
+                bin_edges = linspace(nanmin(samples)-0.2*value_range,nanmax(samples)+0.2*value_range,101);
+            elseif isscalar(bin_edges)
+                value_range = range(samples);
+                number_of_bins = bin_edges;
+                bin_edges = linspace(nanmin(samples)-0.2*value_range,nanmax(samples)+0.2*value_range,number_of_bins);
+            end
             output = Geochemistry_Helpers.Distribution(bin_edges,"manual",histcounts(samples,bin_edges,'Normalization','Probability'));
         end
     end

@@ -50,7 +50,11 @@ classdef Collator<handle
                 if isnumeric(value) || isstring(value)
                     self(index).(parameter) = value;
                 else
-                    self(index).(parameter) = copy(value);
+                    try
+                        self(index).(parameter) = copy(value);
+                    catch
+                        self(index).(parameter) = value;
+                    end
                 end
             end
         end
@@ -65,6 +69,14 @@ classdef Collator<handle
                 else
                     self(index).(parameter) = copy(values(index));
                 end
+            end
+        end
+        function output = create(self,number)
+            class_name = string(class(self));
+            number_cell = num2cell(number);
+            output(number_cell{:}) = eval(class_name+"();");
+            for index = 1:prod(number)
+                output(index) = eval(class_name+"();");
             end
         end
     end
