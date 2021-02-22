@@ -35,7 +35,7 @@ classdef delta<handle&Geochemistry_Helpers.Collator&matlab.mixin.Copyable
         fraction
     end
     properties (Hidden)
-        known_standards = containers.Map({'B','Boron','SRM951'},[4.003,4.003,4.003]);
+        known_standards = containers.Map({'B','Boron','SRM951'},[4.04367,4.04367,4.04367]);
     end
     methods
         function self = delta(standard,value)
