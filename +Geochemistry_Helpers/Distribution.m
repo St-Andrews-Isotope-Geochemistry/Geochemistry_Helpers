@@ -43,19 +43,16 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator
                     assert(numel(bin_edges)==numel(values)+1,"Number of elements in bin_edges must be one greater than the number of probabilities");
                     self.bin_edges = bin_edges;
                     self.probabilities = values;
+                elseif type=="subsample"
+                    self.bin_edges = bin_edges;
+                    self.values = values;
+                    self.probabilities = NaN;
                 else
                     error("Type unknown");
                 end
             end
         end
         
-        % 
-        function self = normalise(self)
-            self.probabilities = self.probabilities/sum(self.probabilities);
-        end
-        function plot(self)
-            plot(self.bin_midpoints,self.probabilities);
-        end
         
         % Setters and Getters
         function set.bin_midpoints(self,value)
@@ -65,6 +62,7 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator
             midpoints = self.bin_edges(1:end-1) + 0.5*(self.bin_edges(2:end)-self.bin_edges(1:end-1));
         end
         
+        % Analysis
         function output = quantile(self,value)
             cumulative_probabilities = [0,cumsum(self.probabilities)];
             values = cumulative_probabilities-value;
@@ -76,6 +74,14 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator
             distances = abs(value-cumulative_values);
             weights = 1-distances./sum(distances);
             output = sum(weights.*crossover_bin_edges);
+        end
+        function self = normalise(self)
+            self.probabilities = self.probabilities/sum(self.probabilities);
+        end
+        
+        % Display
+        function plot(self,varargin)
+            plot(self.bin_midpoints,self.probabilities,varargin{:});
         end
     end
     methods (Static)
