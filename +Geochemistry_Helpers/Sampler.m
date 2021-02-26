@@ -2,6 +2,7 @@ classdef Sampler < handle&Geochemistry_Helpers.Distribution
     properties
         method
         samples
+        subselection
     end
     methods
         % Constructor
@@ -14,13 +15,18 @@ classdef Sampler < handle&Geochemistry_Helpers.Distribution
                     self.values = distribution.values;
                     self.probabilities = distribution.probabilities;
                     self.method = type;
-                else
-                    distribution = Distribution(bin_edges,type,values);
+                elseif type~="subsample"
+                    distribution = Geochemistry_Helpers.Distribution(bin_edges,type,values);
                     self.bin_edges = bin_edges;
                     self.type = type;
                     self.values = values;
-                    self.probabilities = distribution.probabilities;
+                    self.probabilities = distribution.probabilities;                    
                     self.method = method;
+                else
+%                     distribution = Geochemistry_Helpers.Distribution(bin_edges,type,values);
+                    self.bin_edges = bin_edges;
+                    self.type = type;
+                    self.values = values;
                 end
             end
         end
@@ -136,7 +142,41 @@ classdef Sampler < handle&Geochemistry_Helpers.Distribution
             end
         end
         function distribution = distributionFromSamples(self,bin_edges)
-            distribution = Distribution(bin_edges,histcounts(self.samples,bin_edges));
+            distribution = Geochemistry_Helpers.Distribution(bin_edges,"manual",histcounts(self.samples,bin_edges));
+        end
+        
+        
+        function output = where(self,boolean)
+            assert(boolean.type=="subsample","Must be subsample");
+            correct_samples = self.samples(boolean.values);
+            output = Geochemistry_Helpers.Sampler();
+            output.samples = correct_samples;
+            output.bin_edges = self.bin_edges;
+            distribution = output.distributionFromSamples(output.bin_edges).normalise();
+            output.probabilities = distribution.probabilities;
+        end
+        function sampler = near(self,value,tolerance)
+            if nargin<3
+                tolerance = 0;
+            end
+            if numel(value)==1
+                output = self.samples>=value-tolerance & self.samples<=value+tolerance;
+            elseif numel(value)==2
+                output = self.samples>=min(value) & self.samples<=max(value);
+            else
+                error("Wrong number of value - should be 1 or 2 numbers");
+            end
+            sampler = Geochemistry_Helpers.Sampler(self.bin_edges,"subsample",output);
+            sampler.samples = self.samples(output);
+            sampler.subselection = self;
+            distribution = Geochemistry_Helpers.Distribution.fromSamples(sampler.bin_edges,sampler.samples);
+            sampler.probabilities = distribution.probabilities;
+        end
+        function output = samplesNear(self,value,tolerance)
+            if nargin<3
+                tolerance = 0;
+            end
+            output = self.samples(self.near(value,tolerance));
         end
         
         function histogram(self,number_of_bins,normalisation)
