@@ -23,10 +23,19 @@ classdef Collator<handle
             %       output - Is an array of values or objects
             size_of = num2cell(size(self));
             size_of_parameter = num2cell(size(self(1).(parameter)));
-            output(size_of{:},size_of_parameter{:}) = self(1).(parameter);            
-            for index = 1:numel(self)
-                output(index) = self(index).(parameter);
-            end            
+            if numel(self(1).(parameter))>1
+                collapsed_size = [size_of{:},size_of_parameter{:}];
+                nonsingleton_collapsed_size = num2cell(collapsed_size(collapsed_size~=1));
+                output(nonsingleton_collapsed_size{:}) = NaN;
+                for index = 1:numel(self)
+                    output(index,:) = self(index).(parameter);
+                end
+            else
+                output(size_of{:},size_of_parameter{:}) = self(1).(parameter);
+                for index = 1:numel(self)
+                    output(index) = self(index).(parameter);
+                end
+            end
         end
         function output = flatten(self)
             %   flatten - Reshapes an array so all but one dimension is

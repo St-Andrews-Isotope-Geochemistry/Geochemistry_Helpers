@@ -4,13 +4,11 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator
         probabilities
         type
         values
+        location
     end
     properties (Dependent=true)
         bin_midpoints
     end
-%     properties (Hidden=true)
-%         known_values = ["flat","gaussian","manual"];
-%     end
     methods
         % Constructor
         function self = Distribution(bin_edges,type,values)
@@ -53,9 +51,8 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator
             end
         end
         
-        
         % Setters and Getters
-        function set.bin_midpoints(self,value)
+        function set.bin_midpoints(~,~)
             error("Can't set directly");
         end
         function midpoints = get.bin_midpoints(self)
@@ -64,25 +61,77 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator
         
         % Analysis
         function output = quantile(self,value)
-            cumulative_probabilities = [0,cumsum(self.probabilities)];
-            values = cumulative_probabilities-value;
-            values_sign = sign(values);
-            crossover = logical(values_sign(1:end-1)-values_sign(2:end));
-            locations = logical([crossover,0]+[0,crossover]);
-            crossover_bin_edges = self.bin_edges(locations);
-            cumulative_values = cumulative_probabilities(locations);
-            distances = abs(value-cumulative_values);
-            weights = 1-distances./sum(distances);
-            output = sum(weights.*crossover_bin_edges);
+            output = NaN(numel(self),1);
+            for self_index = 1:numel(self)
+                cumulative_probabilities = NaN(1,numel(self(self_index).probabilities)+1);
+                cumulative_probabilities(1) = 0;
+                cumulative_probabilities(2:end) = cumsum(self(self_index).probabilities);
+                values = cumulative_probabilities-value;
+                if any(values==0)
+                    output = self(self_index).bin_midpoints(values==0);
+                else
+                    values_sign = sign(values);
+                    crossover = logical(values_sign(1:end-1)-values_sign(2:end));
+                    locations = logical([crossover,0]+[0,crossover]);
+                    crossover_bin_edges = reshape(self(self_index).bin_edges(locations),1,2);
+                    cumulative_values = cumulative_probabilities(locations);
+                    distances = abs(value-cumulative_values);
+                    weights = 1-distances./sum(distances);
+                    output(self_index) = sum(weights.*crossover_bin_edges);
+                end
+            end
         end
         function self = normalise(self)
             self.probabilities = self.probabilities/sum(self.probabilities);
+        end
+        
+        function output = mean(self)
+            output = NaN(numel(self),1);
+            for self_index = 1:numel(self)
+                output(self_index) = sum(self(self_index).bin_midpoints.*self(self_index).probabilities);
+            end
+        end
+        function output = standard_deviation(self)
+            output = NaN(numel(self),1);
+            for self_index = 1:numel(self)
+                output(self_index) = sqrt(sum((self(self_index).bin_midpoints-self(self_index).mean()).^2 .*self(self_index).probabilities));
+            end
         end
         
         % Display
         function plot(self,varargin)
             plot(self.bin_midpoints,self.probabilities,varargin{:});
         end
+        function output = toJSON(self)
+            output = "["+newline;
+            for self_index = 1:numel(self)
+                output = output+sprintf("\t")+"{"+newline;
+                
+                output = output+sprintf("\t\t")+'"location":';
+                temporary_string = num2str(self(self_index).location,'%.2f,');
+                output = output+temporary_string(1:end-1);
+                output = output+","+newline;
+                
+                output = output+sprintf("\t\t")+'"bin_edges":[';
+                temporary_string = num2str(self(self_index).bin_edges,'%.2f,');
+                output = output+temporary_string(1:end-1);
+                output = output+"],"+newline;
+                
+                output = output+sprintf("\t\t")+'"probabilities":[';
+                temporary_string = num2str(self(self_index).probabilities','%.5e,');
+                output = output+temporary_string(1:end-1);                
+                
+                output = output+"]"+newline;
+                output = output+sprintf("\t")+"}";
+                if self_index == numel(self)
+                    output = output+newline;
+                else
+                    output = output+","+newline;
+                end
+            end
+            output = output+"]";
+        end
+       
     end
     methods (Static)
         function output = create(type,value)
@@ -97,7 +146,16 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator
                 number_of_bins = bin_edges;
                 bin_edges = linspace(nanmin(samples)-0.2*value_range,nanmax(samples)+0.2*value_range,number_of_bins);
             end
-            output = Geochemistry_Helpers.Distribution(bin_edges,"manual",histcounts(samples,bin_edges,'Normalization','Probability'));
+            output = Geochemistry_Helpers.Distribution(bin_edges,"manual",histcounts(samples,bin_edges,'Normalization','Probability')');
+        end        
+        function output = fromJSON(filename)
+            file_raw = fileread(filename);
+            file_json = jsondecode(file_raw);
+            
+            for output_index = 1:numel(file_json)
+                output(output_index) = Geochemistry_Helpers.Distribution(file_json(output_index).bin_edges,"manual",file_json(output_index).probabilities);
+                output(output_index).location = file_json(output_index).location;
+            end            
         end
     end
 end
