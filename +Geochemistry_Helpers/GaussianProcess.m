@@ -41,10 +41,10 @@ classdef GaussianProcess < handle
                 self.query_covariance_matrix = self.kernel_function(self.queries.collate("location"),self.queries.collate("location")',self.parameters)';
             
                 self.observation_covariance_matrix = self.observation_covariance_matrix+diag(repelem(1e-12,size(self.observation_covariance_matrix,1)));
-                sigma_eye_1 = (self.observations.standard_deviation()*5).*eye(size(self.observation_covariance_matrix));
+                observation_uncertainty = self.observations.variance().^2.*eye(size(self.observation_covariance_matrix));
                 
-                self.means = mean(self.observations.mean()) + self.cross_covariance_matrix/(self.observation_covariance_matrix+sigma_eye_1)*(self.observations.mean()-mean(self.observations.mean()));
-                self.covariances = self.query_covariance_matrix-self.cross_covariance_matrix/(self.observation_covariance_matrix+sigma_eye_1)*self.cross_covariance_matrix';
+                self.means = mean(self.observations.mean()) + self.cross_covariance_matrix/(self.observation_covariance_matrix+observation_uncertainty)*(self.observations.mean()-mean(self.observations.mean()));
+                self.covariances = self.query_covariance_matrix-self.cross_covariance_matrix/(self.observation_covariance_matrix+observation_uncertainty)*self.cross_covariance_matrix';
             end
         end
         function self = getSamples(self,number_of_samples)

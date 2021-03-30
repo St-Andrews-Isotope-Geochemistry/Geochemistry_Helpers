@@ -74,64 +74,91 @@ classdef Sampler < handle&Geochemistry_Helpers.Distribution
             end
         end
         function samples = getMedianLatinHypercubeSamples(self,number_of_samples)
-            samples = NaN(1,number_of_samples);
-            samples_every = 1/number_of_samples;
-            left_edge = NaN(1,number_of_samples);
-            right_edge = NaN(1,number_of_samples);
-            
-            current_value = 0;            
-            left_edge = self.bin_edges(1);
-            right_edge = [];
-            for bin_index = 1:numel(self.bin_midpoints)
-                current_value = current_value + self.probabilities(bin_index);
-                if self.probabilities(bin_index)==0
-                    current_value = 0;
-                    left_edge(end) = self.bin_edges(bin_index+1);
-                else
-                    last_right_edge = self.bin_edges(bin_index);
-                end
-                difference_value = current_value-samples_every;
-                if current_value>samples_every                    
-                    current_number_of_samples = fix(current_value/samples_every);
-%                     new_value = mod(current_value,samples_every);
-%                     current_value = new_value;
-                    if current_number_of_samples==1
-                        % There's a new sample in this bin, where is it?
-                        fraction_in = (self.probabilities(bin_index)-difference_value)/self.probabilities(bin_index);
-                        right_edge = [right_edge,self.bin_edges(bin_index)+((self.bin_edges(bin_index+1)-self.bin_edges(bin_index))*fraction_in)];
-                        left_edge = [left_edge,right_edge(end)];
-                        current_value = mod(current_value,samples_every);
-%                         current_value = current_value - (1-fraction_in*self.probabilities(bin_index))
-                    else
-                        % This bin needs to be split multiple times
-                        % Get the first one
-%                         fraction_in = samples_every; %(self.probabilities(bin_index)-difference_value)/self.probabilities(bin_index);
-%                         right_edge = [right_edge,self.bin_edges(bin_index)+((self.bin_edges(bin_index+1)-self.bin_edges(bin_index))*fraction_in)];
-%                         left_edge = [left_edge,right_edge(end)];
-                        
-                        remaining_bin_width = (self.bin_edges(bin_index+1)-self.bin_edges(bin_index));
-                        sample_distances = linspace(0,1,current_number_of_samples+1);
-                        actual_sample_distances = sample_distances(1:end-1);
-                        for sample_distance_index = 1:numel(actual_sample_distances)
-                            fraction_in = actual_sample_distances(sample_distance_index);
-                            right_edge = [right_edge,self.bin_edges(bin_index)+((self.bin_edges(bin_index+1)-self.bin_edges(bin_index))*fraction_in)];
-                            left_edge = [left_edge,right_edge(end)];
-                        end
-                        current_value = mod(current_value,samples_every);
-                    end
-                    
-%                 left_edge = self.bin_edges(bin_index);
-                end
-            end
-            if left_edge(end)==self.bin_edges(end) && self.probabilities(end)==0
-                left_edge(end) = right_edge(end);
-            end
-            right_edge = [right_edge,last_right_edge];
-            edges = [left_edge;right_edge];            
+            edges = self.getLatinHypercubeEdges(number_of_samples);
             samples = median(edges,1);
             if numel(samples)==number_of_samples+1
                 samples = samples(1:end-1);
             end
+        end
+        function samples = getRandomLatinHypercubeSamples(self,number_of_samples)
+            edges = self.getLatinHypercubeEdges(number_of_samples);
+            samples = edges(1,:) + (edges(2,:)-edges(1,:)).*rand(1,size(edges,2));
+            if numel(samples)==number_of_samples+1
+                samples = samples(1:end-1);
+            end
+        end
+        function edges = getLatinHypercubeEdges(self,number_of_samples)
+            samples_every = 1/number_of_samples;
+            edge_index = 1;
+            current_value = 0;
+            added_samples = 0;
+            initial_number_of_samples = number_of_samples;
+            maximum_number_of_samples = min([2*number_of_samples,number_of_samples+1000]);
+            
+            % Find out which bin to start at
+            bin_start = 1;
+            while self.probabilities(bin_start)==0
+                bin_start = bin_start+1;
+            end
+            bin_end = numel(self.bin_edges)-1;
+            while self.probabilities(bin_end)==0
+                bin_end = bin_end-1;
+            end
+            % Detect if there is a resonance between samples
+            if self.probabilities(bin_start)==self.probabilities(bin_start+1)
+                while abs(round(1/mod(self.probabilities(bin_start)/samples_every,1),1)-(1/mod(self.probabilities(bin_start)/samples_every,1)))<1e-10 && number_of_samples<=maximum_number_of_samples
+                    number_of_samples = number_of_samples+1;
+                    samples_every = 1/number_of_samples;
+                    added_samples = added_samples+1;
+                end
+            end
+            left_edge = NaN(1,number_of_samples);
+            right_edge = NaN(1,number_of_samples);
+            
+            for bin_index = bin_start:bin_end
+                current_value = current_value + self.probabilities(bin_index);
+                % Check for rounding which can make a sample disappear at
+                % the end
+                if sum(self.probabilities(bin_index+1:end))==0 && current_value~=0 && abs(mod(current_value,samples_every)-samples_every)<1e-10
+                    current_value = (fix(current_value/samples_every)+1)*samples_every;
+                end
+                if current_value>=samples_every
+                    current_number_of_samples = fix(current_value/samples_every);
+                    if current_number_of_samples==1
+                        % There's a new sample in this bin, where is it?
+                        difference_value = current_value-samples_every;
+                        fraction_in = (self.probabilities(bin_index)-difference_value)/self.probabilities(bin_index);
+                        if edge_index==1
+                            left_edge(edge_index) = self.bin_edges(bin_start);
+                        else
+                            left_edge(edge_index) = right_edge(edge_index-1);
+                        end                        
+                        right_edge(edge_index) = self.bin_edges(bin_index)+((self.bin_edges(bin_index+1)-self.bin_edges(bin_index))*fraction_in);
+                        
+                        current_value = mod(current_value,samples_every);
+                        edge_index = edge_index+1;
+                    else
+                        % This bin needs to be split multiple times
+                        sample_distances = linspace(0,1,current_number_of_samples+1);
+                        lefts_relative = sample_distances(1:end-1);
+                        rights_relative = sample_distances(2:end);
+                        bin_width = self.bin_edges(bin_index+1)-self.bin_edges(bin_index);
+                        
+                        lefts_absolute = self.bin_edges(bin_index)+(lefts_relative*bin_width);
+                        rights_absolute = self.bin_edges(bin_index)+(rights_relative*bin_width);
+
+                        left_edge(edge_index:edge_index+current_number_of_samples-1) = lefts_absolute;
+                        right_edge(edge_index:edge_index+current_number_of_samples-1) = rights_absolute;
+                        
+                        current_value = mod(current_value,samples_every);                        
+                        edge_index = edge_index+current_number_of_samples;
+                    end                    
+                end
+            end
+            edges = [left_edge;right_edge];
+            edges_to_remove = floor(1+rand(added_samples,1)*(number_of_samples-1));
+            edges(:,edges_to_remove) = [];
+            assert(size(edges,2)==initial_number_of_samples,"Got wrong number of samples...");
         end
         
         function [self,samples] = shuffle(self)

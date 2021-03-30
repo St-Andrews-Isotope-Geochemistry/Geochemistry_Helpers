@@ -27,8 +27,9 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator
                     assert(numel(values)==2,"Number of values must be 2");
                     assert(values(1)<=values(2),"The first value must be less than or equal to the second")
                     self.bin_edges = bin_edges;
+                    bin_width = self.bin_edges(2)-self.bin_edges(1);
                     probability = zeros(1,numel(self.bin_edges)-1);
-                    probability(self.bin_edges>values(1) & self.bin_edges<values(2))=1;
+                    probability(self.bin_edges>=values(1) & self.bin_edges<values(2))=1;
                     self.probabilities = probability;
                 elseif type=="gaussian" || type=="normal"
                     assert(numel(values)==2,"Number of values must be 2 (mean and standard deviation)");
@@ -68,7 +69,14 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator
                 cumulative_probabilities(2:end) = cumsum(self(self_index).probabilities);
                 values = cumulative_probabilities-value;
                 if any(values==0)
-                    output = self(self_index).bin_midpoints(values==0);
+                    if numel(self(self_index).bin_midpoints(values==0))==1
+                        output = self(self_index).bin_midpoints(values==0);
+                    else
+                        zero_bins = self(self_index).bin_midpoints(values==0);
+                        first = zero_bins(1);
+                        last = zero_bins(end);
+                        output = (first+last)/2;
+                    end
                 else
                     values_sign = sign(values);
                     crossover = logical(values_sign(1:end-1)-values_sign(2:end));
@@ -97,10 +105,19 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator
                 output(self_index) = sqrt(sum((self(self_index).bin_midpoints-self(self_index).mean()).^2 .*self(self_index).probabilities));
             end
         end
+        function output = variance(self)
+            output = NaN(numel(self),1);
+            for self_index = 1:numel(self)
+                output(self_index) = (sum((self(self_index).bin_midpoints-self(self_index).mean()).^2 .*self(self_index).probabilities));
+            end
+        end
         
         % Display
         function plot(self,varargin)
             plot(self.bin_midpoints,self.probabilities,varargin{:});
+        end
+        function area(self,varargin)
+            area(self.bin_midpoints,self.probabilities,varargin{:});
         end
         function output = toJSON(self)
             output = "["+newline;
@@ -134,9 +151,9 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator
        
     end
     methods (Static)
-        function output = create(type,value)
-            output = Distribution(type,value);
-        end
+%         function output = create(type,value)
+%             output = Distribution(type,value);
+%         end
         function output = fromSamples(bin_edges,samples)
             if isnan(bin_edges)
                 value_range = range(samples);
