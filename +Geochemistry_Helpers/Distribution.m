@@ -64,28 +64,32 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator
         function output = quantile(self,value)
             output = NaN(numel(self),1);
             for self_index = 1:numel(self)
-                cumulative_probabilities = NaN(1,numel(self(self_index).probabilities)+1);
-                cumulative_probabilities(1) = 0;
-                cumulative_probabilities(2:end) = cumsum(self(self_index).probabilities);
-                values = cumulative_probabilities-value;
-                if any(values==0)
-                    if numel(self(self_index).bin_midpoints(values==0))==1
-                        output = self(self_index).bin_midpoints(values==0);
+                if ~isempty(self(self_index).probabilities)
+                    cumulative_probabilities = NaN(1,numel(self(self_index).probabilities)+1);
+                    cumulative_probabilities(1) = 0;
+                    cumulative_probabilities(2:end) = cumsum(self(self_index).probabilities);
+                    values = cumulative_probabilities-value;
+                    if any(values==0)
+                        if numel(self(self_index).bin_midpoints(values==0))==1
+                            output(self_index) = self(self_index).bin_midpoints(values==0);
+                        else
+                            zero_bins = self(self_index).bin_midpoints(values==0);
+                            first = zero_bins(1);
+                            last = zero_bins(end);
+                            output(self_index) = (first+last)/2;
+                        end
                     else
-                        zero_bins = self(self_index).bin_midpoints(values==0);
-                        first = zero_bins(1);
-                        last = zero_bins(end);
-                        output = (first+last)/2;
+                        values_sign = sign(values);
+                        crossover = logical(values_sign(1:end-1)-values_sign(2:end));
+                        locations = logical([crossover,0]+[0,crossover]);
+                        crossover_bin_edges = reshape(self(self_index).bin_edges(locations),1,2);
+                        cumulative_values = cumulative_probabilities(locations);
+                        distances = abs(value-cumulative_values);
+                        weights = 1-distances./sum(distances);
+                        output(self_index) = sum(weights.*crossover_bin_edges);
                     end
                 else
-                    values_sign = sign(values);
-                    crossover = logical(values_sign(1:end-1)-values_sign(2:end));
-                    locations = logical([crossover,0]+[0,crossover]);
-                    crossover_bin_edges = reshape(self(self_index).bin_edges(locations),1,2);
-                    cumulative_values = cumulative_probabilities(locations);
-                    distances = abs(value-cumulative_values);
-                    weights = 1-distances./sum(distances);
-                    output(self_index) = sum(weights.*crossover_bin_edges);
+                    output(self_index) = NaN;
                 end
             end
         end
