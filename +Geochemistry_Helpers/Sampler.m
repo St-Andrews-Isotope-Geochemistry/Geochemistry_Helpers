@@ -123,7 +123,13 @@ classdef Sampler < handle&Geochemistry_Helpers.Distribution
                     current_value = (fix(current_value/samples_every)+1)*samples_every;
                 end
                 if current_value>=samples_every
-                    current_number_of_samples = fix(current_value/samples_every);
+                    if abs(round(current_value/samples_every)-(current_value/samples_every))<1e-10
+                        current_number_of_samples = round(current_value/samples_every);
+                        leftover = round(current_value/samples_every)-(current_value/samples_every);
+                    else
+                        current_number_of_samples = fix(current_value/samples_every);
+                        leftover = 0;
+                    end
                     if current_number_of_samples==1
                         % There's a new sample in this bin, where is it?
                         difference_value = current_value-samples_every;
@@ -150,15 +156,21 @@ classdef Sampler < handle&Geochemistry_Helpers.Distribution
                         left_edge(edge_index:edge_index+current_number_of_samples-1) = lefts_absolute;
                         right_edge(edge_index:edge_index+current_number_of_samples-1) = rights_absolute;
                         
-                        current_value = mod(current_value,samples_every);                        
+                        current_value = mod(current_value,samples_every);                       
                         edge_index = edge_index+current_number_of_samples;
                     end                    
                 end
             end
             edges = [left_edge;right_edge];
             edges_to_remove = floor(1+rand(added_samples,1)*(number_of_samples-1));
-            edges(:,edges_to_remove) = [];
+            edges(:,edges_to_remove) = [];            
+            
+            extra_samples = size(edges,2)-initial_number_of_samples;
+            extra_edges_to_remove = floor(1+rand(extra_samples,1)*(number_of_samples-1));
+            edges(:,extra_edges_to_remove) = [];
+            
             assert(size(edges,2)==initial_number_of_samples,"Got wrong number of samples...");
+            assert(edge_index-1 >= number_of_samples,"Didn't fill all samples");
         end
         
         function [self,samples] = shuffle(self)
