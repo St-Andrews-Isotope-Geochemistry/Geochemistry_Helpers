@@ -96,13 +96,13 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator
         function output = mean(self)
             output = NaN(numel(self),1);
             for self_index = 1:numel(self)
-                output(self_index) = sum(self(self_index).bin_midpoints.*self(self_index).probabilities);
+                output(self_index) = sum(self(self_index).bin_midpoints.*self(self_index).probabilities');
             end
         end
         function output = standard_deviation(self)
             output = NaN(numel(self),1);
             for self_index = 1:numel(self)
-                output(self_index) = sqrt(sum((self(self_index).bin_midpoints-self(self_index).mean()).^2 .*self(self_index).probabilities));
+                output(self_index) = sqrt(sum((self(self_index).bin_midpoints-self(self_index).mean()).^2 .*self(self_index).probabilities'));
             end
         end
         function output = variance(self)
