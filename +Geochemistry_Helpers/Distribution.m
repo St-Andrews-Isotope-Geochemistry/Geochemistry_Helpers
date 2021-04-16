@@ -40,6 +40,9 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator
                     self.probabilities = gaussian;                    
                 elseif type=="manual"
                     assert(numel(bin_edges)==numel(values)+1,"Number of elements in bin_edges must be one greater than the number of probabilities");
+                    if size(bin_edges,1)==1
+                        bin_edges = bin_edges';
+                    end
                     self.bin_edges = bin_edges;
                     self.probabilities = values;
                 elseif type=="subsample"
@@ -70,10 +73,10 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator
                     cumulative_probabilities(2:end) = cumsum(self(self_index).probabilities);
                     values = cumulative_probabilities-value;
                     if any(values==0)
-                        if numel(self(self_index).bin_midpoints(values==0))==1
+                        if numel(self(self_index).bin_edges(values==0))==1
                             output(self_index) = self(self_index).bin_midpoints(values==0);
                         else
-                            zero_bins = self(self_index).bin_midpoints(values==0);
+                            zero_bins = self(self_index).bin_edges(values==0);
                             first = zero_bins(1);
                             last = zero_bins(end);
                             output(self_index) = (first+last)/2;
@@ -100,13 +103,13 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator
         function output = mean(self)
             output = NaN(numel(self),1);
             for self_index = 1:numel(self)
-                output(self_index) = sum(self(self_index).bin_midpoints.*self(self_index).probabilities');
+                output(self_index) = sum(self(self_index).bin_midpoints.*self(self_index).probabilities);
             end
         end
         function output = standard_deviation(self)
             output = NaN(numel(self),1);
             for self_index = 1:numel(self)
-                output(self_index) = sqrt(sum((self(self_index).bin_midpoints-self(self_index).mean()).^2 .*self(self_index).probabilities'));
+                output(self_index) = sqrt(sum((self(self_index).bin_midpoints-self(self_index).mean()).^2 .*self(self_index).probabilities));
             end
         end
         function output = variance(self)
