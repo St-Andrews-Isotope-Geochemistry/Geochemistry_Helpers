@@ -26,7 +26,13 @@ classdef Collator<handle
             if numel(self(1).(parameter))>1
                 collapsed_size = [size_of{:},size_of_parameter{:}];
                 nonsingleton_collapsed_size = num2cell(collapsed_size(collapsed_size~=1));
-                output(nonsingleton_collapsed_size{:}) = NaN;
+                if numel(nonsingleton_collapsed_size)==1
+                    nonsingleton_collapsed_size{2} = 1;
+                end
+                if isnumeric(self(1).(parameter))
+                    output(nonsingleton_collapsed_size{:}) = NaN;
+                    output(:) = NaN;
+                end
                 for index = 1:numel(self)
                     output(index,:) = self(index).(parameter);
                 end
