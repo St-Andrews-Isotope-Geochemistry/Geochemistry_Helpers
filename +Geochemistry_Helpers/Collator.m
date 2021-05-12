@@ -87,11 +87,11 @@ classdef Collator<handle
             end
         end
         function output = create(self,number)
-            class_name = string(class(self));
+%             class_name = string();
             number_cell = num2cell(number);
-            output(number_cell{:}) = eval(class_name+"();");
-            for index = 1:prod(number)
-                output(index) = eval(class_name+"();");
+            output(number_cell{:}) = feval(class(self));
+            parfor index = 1:prod(number)
+                output(index) = feval(class(self));
             end
         end
     end

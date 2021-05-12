@@ -27,8 +27,9 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator&matlab.mixin.Copyab
                     assert(numel(values)==2,"Number of values must be 2");
                     assert(values(1)<=values(2),"The first value must be less than or equal to the second")
                     self.bin_edges = bin_edges;
+                    bin_width = self.bin_edges(2)-self.bin_edges(1);
                     probability = zeros(1,numel(self.bin_edges)-1);
-                    probability(self.bin_edges>values(1) & self.bin_edges<values(2))=1;
+                    probability(self.bin_edges>=values(1) & self.bin_edges<values(2))=1;
                     self.probabilities = probability;
                 elseif type=="gaussian" || type=="normal"
                     assert(numel(values)==2,"Number of values must be 2 (mean and standard deviation)");
@@ -39,6 +40,9 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator&matlab.mixin.Copyab
                     self.probabilities = gaussian;                    
                 elseif type=="manual"
                     assert(numel(bin_edges)==numel(values)+1,"Number of elements in bin_edges must be one greater than the number of probabilities");
+                    if size(bin_edges,1)==1
+                        bin_edges = bin_edges';
+                    end
                     self.bin_edges = bin_edges;
                     self.probabilities = values;
                 elseif type=="subsample"
@@ -91,6 +95,12 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator&matlab.mixin.Copyab
             output = NaN(numel(self),1);
             for self_index = 1:numel(self)
                 output(self_index) = sqrt(sum((self(self_index).bin_midpoints-self(self_index).mean()).^2 .*self(self_index).probabilities));
+            end
+        end
+        function output = variance(self)
+            output = NaN(numel(self),1);
+            for self_index = 1:numel(self)
+                output(self_index) = (sum((self(self_index).bin_midpoints-self(self_index).mean()).^2 .*self(self_index).probabilities));
             end
         end
         
@@ -176,6 +186,9 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator&matlab.mixin.Copyab
         function plot(self,varargin)
             plot(self.bin_midpoints,self.probabilities,varargin{:});
         end
+        function area(self,varargin)
+            area(self.bin_midpoints,self.probabilities,varargin{:});
+        end
         function output = toJSON(self)
             output = "["+newline;
             for self_index = 1:numel(self)
@@ -208,9 +221,9 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator&matlab.mixin.Copyab
        
     end
     methods (Static)
-        function output = create(type,value)
-            output = Distribution(type,value);
-        end
+%         function output = create(type,value)
+%             output = Distribution(type,value);
+%         end
         function output = fromSamples(bin_edges,samples)
             if isnan(bin_edges)
                 value_range = range(samples);

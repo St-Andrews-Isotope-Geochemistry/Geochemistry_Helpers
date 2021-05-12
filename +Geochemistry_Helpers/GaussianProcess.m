@@ -44,6 +44,7 @@ classdef GaussianProcess < handle & Geochemistry_Helpers.Collator
                 self.query_covariance_matrix = self.kernel_function(self.queries.collate("location"),self.queries.collate("location")',self.parameters)';
             
                 self.observation_covariance_matrix = self.observation_covariance_matrix+diag(repelem(1e-12,size(self.observation_covariance_matrix,1)));
+
                 observation_uncertainty = (self.observation_approximations.standard_deviation().^2).*eye(size(self.observation_covariance_matrix));
                 
                 self.means = mean(self.observation_approximations.mean()) + self.cross_covariance_matrix/(self.observation_covariance_matrix+observation_uncertainty)*(self.observation_approximations.mean()-mean(self.observation_approximations.mean()));
