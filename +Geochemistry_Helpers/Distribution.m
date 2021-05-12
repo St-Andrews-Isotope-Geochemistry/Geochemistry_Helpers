@@ -1,4 +1,4 @@
-classdef Distribution < handle&Geochemistry_Helpers.Collator
+classdef Distribution < handle&Geochemistry_Helpers.Collator&matlab.mixin.Copyable
     properties
         bin_edges
         probabilities
@@ -60,24 +60,20 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator
         end
         
         % Analysis
-        function output = quantile(self,value)
-            output = NaN(numel(self),1);
-            for self_index = 1:numel(self)
-                cumulative_probabilities = NaN(1,numel(self(self_index).probabilities)+1);
-                cumulative_probabilities(1) = 0;
-                cumulative_probabilities(2:end) = cumsum(self(self_index).probabilities);
-                values = cumulative_probabilities-value;
-                if any(values==0)
-                    output = self(self_index).bin_midpoints(values==0);
-                else
-                    values_sign = sign(values);
-                    crossover = logical(values_sign(1:end-1)-values_sign(2:end));
-                    locations = logical([crossover,0]+[0,crossover]);
-                    crossover_bin_edges = reshape(self(self_index).bin_edges(locations),1,2);
-                    cumulative_values = cumulative_probabilities(locations);
-                    distances = abs(value-cumulative_values);
-                    weights = 1-distances./sum(distances);
-                    output(self_index) = sum(weights.*crossover_bin_edges);
+        function output = quantile(self,input)
+            output = NaN(numel(self),numel(input));
+            for value_index = 1:numel(input)
+                value = input(value_index);
+                for self_index = 1:numel(self)
+                    cumulative_probabilities = NaN(1,numel(self(self_index).probabilities)+1);
+                    cumulative_probabilities(1) = 0;
+                    cumulative_probabilities(2:end) = cumsum(self(self_index).probabilities);
+                    values = cumulative_probabilities-value;
+                    if any(values==0)
+                        output(self_index,value_index) = self(self_index).bin_midpoints(values==0);
+                    else
+                        output(self_index,value_index) = self.piecewiseInterpolate(cumulative_probabilities',self(self_index).bin_edges,value);
+                    end
                 end
             end
         end
@@ -95,6 +91,84 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator
             output = NaN(numel(self),1);
             for self_index = 1:numel(self)
                 output(self_index) = sqrt(sum((self(self_index).bin_midpoints-self(self_index).mean()).^2 .*self(self_index).probabilities));
+            end
+        end
+        
+        function output = getProbability(self,value)
+            for value_index = 1:size(value,2)
+                for self_index = 1:numel(self)
+                    output(self_index,value_index) = self.piecewiseInterpolate(self(self_index).bin_midpoints,self(self_index).probabilities,value(self_index,value_index));
+                end
+            end
+            
+%             figure(1);
+%             clf
+%             hold on
+%             
+%             for self_index = 1:numel(self)
+%             clf
+%             hold on
+%                 self_index = 6;
+%                 self(self_index).plot();
+%                 plot(value(self_index),output(self_index),'x');
+%             end
+        end
+        function output = likelihoodFromQuantiles(self,values)
+            x = self.quantile(values);
+            output = self.getProbability(x);
+        end
+        
+        function output = approximateGaussian(self,inflation)
+            if nargin<2
+                inflation = 1;
+            end
+            for self_index = 1:numel(self)
+                output(self_index) = Geochemistry_Helpers.Distribution(self(self_index).bin_edges,"Gaussian",[self(self_index).mean(),self(self_index).standard_deviation()*inflation]).normalise();
+            end
+        end
+        function smooth(self,widths,preserves)
+            if nargin<2
+                widths = 3;
+            end
+            if nargin<3
+                preserves = 0.5;
+            end
+            if numel(widths)==1 && numel(preserves)>1
+                widths = repelem(widths,numel(preserves));
+            elseif numel(preserves)==1 && numel(widths)>1
+                preserves = repelem(preserves,numel(widths));
+            end
+            assert(numel(widths)==numel(preserves),"Number of widths must be equal to number of preserves unless one is scalar");
+            
+            for repeat_index = 1:numel(widths)
+                width = widths(repeat_index);
+                preserve = preserves(repeat_index);
+                
+                assert(mod(width,2)~=0,"Width must be odd");
+                assert(preserve>=0 && preserve<=1,"Preserve must be between 0 and 1");
+                half_width = floor(width/2);
+                for self_index = 1:numel(self)
+                    probabilities = self(self_index).probabilities;
+                    output = NaN(size(self(self_index).probabilities));
+                    output(1:half_width) = self(self_index).probabilities(1);
+                    output(end-half_width:end) = self(self_index).probabilities(end);
+                    for probability_index = half_width+1:numel(self(self_index).probabilities)-half_width-1
+                        difference = abs([self(self_index).probabilities(probability_index-half_width:probability_index-1);self(self_index).probabilities(probability_index+1:probability_index+half_width)]-self(self_index).probabilities(probability_index));
+                        if all(difference==0)
+                            difference_fraction = zeros(width-1,1);
+                        else
+                            if self(self_index).probabilities(probability_index)~=0
+                                difference_fraction = difference/self(self_index).probabilities(probability_index);
+                            elseif mean(self(self_index).probabilities(probability_index-1:probability_index+1))~=0
+                                difference_fraction = difference/mean(self(self_index).probabilities(probability_index-half_width:probability_index+half_width));
+                            end
+                        end
+                        weight = ((1-preserve)/(width-1))./(1+exp((-50).*(1-difference_fraction-0.75)));
+                        output(probability_index) = [weight(1:half_width)',1-sum(weight),weight(half_width+1:end)']*self(self_index).probabilities(probability_index-half_width:probability_index+half_width);
+                    end
+                    self(self_index).probabilities = output;
+                    self(self_index).normalise();
+                end
             end
         end
         
@@ -156,6 +230,20 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator
                 output(output_index) = Geochemistry_Helpers.Distribution(file_json(output_index).bin_edges,"manual",file_json(output_index).probabilities);
                 output(output_index).location = file_json(output_index).location;
             end            
+        end
+        function output = piecewiseInterpolate(x,y,xq)
+            if any(x==xq) && sum(x==xq)==1
+                output = y(x==xq);
+            else
+                signed_distance = xq-x;
+                distance_sign = sign(signed_distance);
+                distance_sign(distance_sign<0) = 0;
+                crossover = logical(distance_sign(1:end-1)-distance_sign(2:end))';
+                distances = abs([signed_distance([crossover,false]),signed_distance([false,crossover])]);
+                weights = 1-(distances*(1/sum(distances)));
+                values =  [y([crossover,false]),y([false,crossover])];
+                output = weights*values';
+            end
         end
     end
 end
