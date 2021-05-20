@@ -330,6 +330,12 @@ classdef Colour < handle&Geochemistry_Helpers.Collator&matlab.mixin.Copyable
                     [rgb,~] = self.clamp([0,1],(self.getlmsrgbMatrix()*self.getDeutranopiaMatrix()*self.getrgblmsMatrix()*self.rgb')');
                 case "tritanopia"
                     [rgb,~] = self.clamp([0,1],(self.getlmsrgbMatrix()*self.getTritanopiaMatrix()*self.getrgblmsMatrix()*self.rgb')');
+                case "monochromatism_red"
+                    [rgb,~] = self.clamp([0,1],(self.getlmsrgbMatrix()*self.getMonochromatismRedMatrix()*self.getrgblmsMatrix()*self.rgb')');
+                case "monochromatism_blue"
+                    [rgb,~] = self.clamp([0,1],(self.getlmsrgbMatrix()*self.getMonochromatismGreenMatrix()*self.getrgblmsMatrix()*self.rgb')');
+                case "monochromatism_green"
+                    [rgb,~] = self.clamp([0,1],(self.getlmsrgbMatrix()*self.getMonochromatismBlueMatrix()*self.getrgblmsMatrix()*self.rgb')');
             end
             self.rgb = rgb;
             self.applyGammaCorrection();
@@ -337,11 +343,11 @@ classdef Colour < handle&Geochemistry_Helpers.Collator&matlab.mixin.Copyable
         
         function output = complementary(self)
             output = self.preserve().rotate(180);
-        end
-        
+        end        
         function output = preserve(self)
             output = Geochemistry_Helpers.Colour.Colour(self.set_value,self.space,self.location);
         end
+        
         % Conversions
         function polar = toPolar(self)
             if strcmp(self.space,"hsv")
