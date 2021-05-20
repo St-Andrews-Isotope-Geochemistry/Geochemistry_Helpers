@@ -21,27 +21,66 @@ classdef Collator<handle
             %   collate - Iterates over an array of objects to extract the specified property
             %       input - The name of the parameter to extract as a string
             %       output - Is an array of values or objects
-            size_of = num2cell(size(self));
-            size_of_parameter = num2cell(size(self(1).(parameter)));
-            if numel(self(1).(parameter))>1
-                collapsed_size = [size_of{:},size_of_parameter{:}];
-                nonsingleton_collapsed_size = num2cell(collapsed_size(collapsed_size~=1));
-                if numel(nonsingleton_collapsed_size)==1
-                    nonsingleton_collapsed_size{2} = 1;
-                end
-                if isnumeric(self(1).(parameter))
-                    output(nonsingleton_collapsed_size{:}) = NaN;
-                    output(:) = NaN;
-                end
-                for index = 1:numel(self)
-                    output(index,:) = self(index).(parameter);
-                end
+            
+            % Make necessary checks
+            output_size = size(self(1).(parameter));
+            if isnumeric(self(1).(parameter))
+                output_type = 1;
+            elseif isstring(self(1).(parameter))
+                output_type = 2;
+            elseif isdatetime(self(1).(parameter))
+                output_type = 3;
             else
-                output(size_of{:},size_of_parameter{:}) = self(1).(parameter);
-                for index = 1:numel(self)
-                    output(index) = self(index).(parameter);
+                output_type = 4;
+            end
+            for self_index = 1:numel(self)
+                assert(all(size(self(self_index).(parameter))==output_size),"Requested parameters have variable size");
+                if output_type==1
+                    assert(isnumeric(self(self_index).(parameter)),"Requested parameters are of different type");
+                elseif output_type==2
+                    assert(isstring(self(self_index).(parameter)),"Requested parameters are of different type");
+                elseif output_type==3
+                    assert(isdatetime(self(self_index).(parameter)),"Requested parameters are of different type");
+                elseif output_type==4
+                    % Assume a random object
                 end
             end
+            
+            
+            % Define the metadata
+            original_size_cell = num2cell(size(self));
+            output_size_cell = num2cell(output_size);
+            
+%             size_of = num2cell(size(self));
+%             size_of_parameter = num2cell(size(self(1).(parameter)));
+%             if numel(self(1).(parameter))>1
+%                 collapsed_size = [size_of{:},size_of_parameter{:}];
+%                 nonsingleton_collapsed_size = num2cell(collapsed_size(collapsed_size~=1));
+%                 if numel(nonsingleton_collapsed_size)==1
+%                     nonsingleton_collapsed_size{2} = 1;
+%                 end
+%                 if isnumeric(self(1).(parameter))
+%                     output(nonsingleton_collapsed_size{:}) = NaN;
+%                     output(:) = NaN;
+%                 end
+%                 for index = 1:numel(self)
+%                     output(index,:) = self(index).(parameter);
+%                 end
+%             else
+%                 output(size_of{:},size_of_parameter{:}) = self(1).(parameter);
+%                 for index = 1:numel(self)
+%                     output(index) = self(index).(parameter);
+%                 end
+%             end
+
+            % First flatten the array, then collate, then reshape
+            flattened = self.flatten;
+            flat_output = NaN(numel(flattened),output_size_cell{:});
+            
+            for self_index = 1:numel(self)
+                flat_output(self_index,:) = self(self_index).(parameter);
+            end
+            output = squeeze(reshape(flat_output,original_size_cell{:},output_size_cell{:}));
         end
         function output = flatten(self)
             %   flatten - Reshapes an array so all but one dimension is
