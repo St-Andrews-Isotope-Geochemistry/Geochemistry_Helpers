@@ -59,14 +59,20 @@ classdef GaussianProcess < handle & Geochemistry_Helpers.Collator
             end
             self.assignSamples();
         end
-        function reweight(self,method)
+        function reweight(self,method,number_of_samples)
+            if nargin<2
+                method = "rejection";
+            end
+            if nargin<3
+                number_of_samples = size(self.samples,1);
+            end
             samples_at_observations = interp1(self.queries.collate("location"),self.samples',self.observations.collate("location")');
             
             if strcmp(method,"rejection")
                 supremum = self.getSupremum();
                 new_samples = [];
                 % What's the chance of getting those samples
-                while size(new_samples,1)<size(self.samples,1)
+                while size(new_samples,1)<number_of_samples
                     for sample_index = 1:size(self.samples,1)
                         observation_probability = self.observations.getProbability(samples_at_observations(:,sample_index));
                         observation_approximation_probability = self.observation_approximations.getProbability(samples_at_observations(:,sample_index));
@@ -92,10 +98,10 @@ classdef GaussianProcess < handle & Geochemistry_Helpers.Collator
                 
                 ratio = observations_probability_cumulative./observation_approximations_probability_cumulative;
                 ratio_normalised = ratio./sum(ratio);
-                [ratio_normalised_sorted,ratio_index] = sort(ratio_normalised);
+%                 [ratio_normalised_sorted,ratio_index] = sort(ratio_normalised);
                 
-                ratio_sampler = Geochemistry_Helpers.Sampler([ratio_index-0.5,ratio_index(end)+0.5],"manual",ratio_normalised_sorted,"latin_hypercube");
-                ratio_sampler.getSamples(10000);
+                ratio_sampler = Geochemistry_Helpers.Sampler([0.5:numel(ratio)+0.5],"manual",ratio_normalised,"monte_carlo");
+                ratio_sampler.getSamples(number_of_samples);
                 rounded_samples = round(ratio_sampler.samples);
                 new_samples = self.samples(rounded_samples,:);
             else
@@ -106,23 +112,33 @@ classdef GaussianProcess < handle & Geochemistry_Helpers.Collator
             self.samples = new_samples;
             self.assignSamples();
             
-            %%
-            index = 1;
-            figure(1);
-            clf
-            hold on
-            self.observations(index).plot('r');
-            self.observation_approximations(index).plot('g');
-            original_queries(round(original_queries(index).location*10 + 1)).plot('b');
-            self.queries(round(self.observations(index).location*10 + 1)).plot('k');
-
-            %%
-            figure(2);
-            clf
-            hold on
-            plot(self.queries.collate("location"),new_samples(1:100,:));
+%             ratio_output = ratio_normalised(rounded_samples);
             
-            plot(self.observations.collate("location"),self.observations.mean(),'ok','MarkerFaceColor','k');
+            %%
+%             index = 2;
+%             figure(1);
+%             clf
+%             hold on
+%             self.observations(index).plot('r');
+%             self.observation_approximations(index).plot('g');
+%             for query_index = 1:numel(original_queries)
+%                 if self.queries(query_index).location == self.observations(index).location;
+%                     break
+%                 end
+%             end
+%             original_queries(query_index).plot('b');
+%             self.queries(query_index).plot('k');
+% %             plot(ratio_normalised,'m');
+% 
+%             original_queries(query_index).quantile(0.5);
+%             self.queries(query_index).quantile(0.5);
+%             
+%             %%
+%             figure(2);
+%             clf
+%             hold on
+%             plot(self.queries.collate("location"),new_samples(1:20,:),'b');            
+%             plot(self.observations.collate("location"),self.observations.mean(),'ok','MarkerFaceColor','k');
         end
         
         function supremum = getSupremum(self)
