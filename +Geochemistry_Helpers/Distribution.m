@@ -28,7 +28,7 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator&matlab.mixin.Copyab
                     assert(values(1)<=values(2),"The first value must be less than or equal to the second")
                     self.bin_edges = bin_edges;
                     bin_width = self.bin_edges(2)-self.bin_edges(1);
-                    probability = zeros(1,numel(self.bin_edges)-1);
+                    probability = zeros(numel(self.bin_edges)-1,1);
                     probability(self.bin_edges>=values(1) & self.bin_edges<values(2))=1;
                     self.probabilities = probability;
                 elseif type=="gaussian" || type=="normal"
@@ -74,7 +74,7 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator&matlab.mixin.Copyab
                     cumulative_probabilities(2:end) = cumsum(self(self_index).probabilities);
                     values = cumulative_probabilities-value;
                     if any(values==0)
-                        output(self_index,value_index) = self(self_index).bin_midpoints(values==0);
+                        output(self_index,value_index) = mean(self(self_index).bin_midpoints(values==0));
                     else
                         output(self_index,value_index) = self.piecewiseInterpolate(cumulative_probabilities',self(self_index).bin_edges,value);
                     end
