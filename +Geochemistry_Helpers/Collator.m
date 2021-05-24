@@ -75,7 +75,10 @@ classdef Collator<handle
 
             % First flatten the array, then collate, then reshape
             flattened = self.flatten;
-            flat_output = NaN(numel(flattened),output_size_cell{:});
+            if output_type==1
+                flat_output = NaN(numel(flattened),output_size_cell{:});
+            elseif output_type==4
+            end
             
             for self_index = 1:numel(self)
                 flat_output(self_index,:) = self(self_index).(parameter);
@@ -132,6 +135,35 @@ classdef Collator<handle
             parfor index = 1:prod(number)
                 output(index) = feval(class(self));
             end
+        end
+        
+        function number = numArgumentsFromSubscript(self,request,indexingContext)
+            number = 1;
+%             number = length([request(1).subs{:}]);
+        end
+        function varargout = subsref(self,request)
+            if numel(request)>1
+                switch request(1).type
+                    case '.'
+                        request_string = request.subs;
+                        if numel(self)>1 && isprop(self(1),request_string)
+                            collated = self.collate(request_string);
+                            output = subsref(collated,request(2:end));
+                            varargout{1} = output;
+                            return
+                        end
+                end
+            else
+                switch request(1).type
+                    case '.'
+                        request_string = request.subs;
+                        if numel(self)>1 && isprop(self(1),request_string)
+                            varargout{1} = self.collate(request_string);
+                            return
+                        end
+                end
+            end
+            [varargout{1:nargout}] = builtin('subsref',self,request);
         end
     end
 end

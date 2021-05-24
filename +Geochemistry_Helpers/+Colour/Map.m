@@ -96,6 +96,22 @@ classdef Map < handle
             end
         end
         
+        function output = subsref(self,request)
+            switch request(1).type
+                case '.'
+                    potential_colour_name = request.subs;
+                case '()'
+                    potential_colour_name = request.subs{1};
+            end
+            for colour = self.colours
+                if strcmp(colour.name,potential_colour_name)
+                    output = colour;
+                    return
+                end
+            end
+            output = builtin('subsref',self,request);
+        end
+        
         function json_string = toJSON(self)
             json_string = "["+newline+"{"+newline+'  "'+name+'"'+":["+newline+"    ";
             for colour = self.colours
