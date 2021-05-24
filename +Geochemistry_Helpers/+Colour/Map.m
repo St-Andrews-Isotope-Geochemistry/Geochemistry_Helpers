@@ -56,7 +56,7 @@ classdef Map < handle
             
             map = Geochemistry_Helpers.Colour.Map("internal");
             for location_index = 1:number_of_colours
-                map.addColour(Geochemistry_Helpers.Colour.Colour(new_rgb(location_index,:),new_locations(location_index)));
+                map.addColour(Geochemistry_Helpers.Colour.Colour(new_rgb(location_index,:),"rgb",new_locations(location_index)));
             end
         end
         function self = addColour(self,colour,location)
