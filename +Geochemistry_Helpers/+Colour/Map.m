@@ -48,7 +48,7 @@ classdef Map < handle
                 end
             end
             original_locations = self.colours.collate("location");
-            original_rgb = self.colours.collate("set_value");
+            original_rgb = self.colours.collate("set_value_numeric");
             assert(issorted(original_locations),"Locations must be sorted");
             
             new_locations = linspace(original_locations(1),original_locations(end),number_of_colours);
