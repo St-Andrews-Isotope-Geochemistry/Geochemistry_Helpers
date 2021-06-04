@@ -48,7 +48,7 @@ classdef Map < handle
                 end
             end
             original_locations = self.colours.collate("location");
-            original_rgb = self.colours.collate("set_value");
+            original_rgb = self.colours.collate("set_value_numeric");
             assert(issorted(original_locations),"Locations must be sorted");
             
             new_locations = linspace(original_locations(1),original_locations(end),number_of_colours);
@@ -56,7 +56,7 @@ classdef Map < handle
             
             map = Geochemistry_Helpers.Colour.Map("internal");
             for location_index = 1:number_of_colours
-                map.addColour(Geochemistry_Helpers.Colour.Colour(new_rgb(location_index,:),new_locations(location_index)));
+                map.addColour(Geochemistry_Helpers.Colour.Colour(new_rgb(location_index,:),"rgb",new_locations(location_index)));
             end
         end
         function self = addColour(self,colour,location)
