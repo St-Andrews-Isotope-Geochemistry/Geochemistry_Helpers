@@ -130,9 +130,12 @@ classdef Collator<handle
         end
         function output = create(self,number)
 %             class_name = string();
+            if numel(number)==1
+                number = [number,1];
+            end
             number_cell = num2cell(number);
             output(number_cell{:}) = feval(class(self));
-            parfor index = 1:prod(number)
+            for index = 1:prod(number)
                 output(index) = feval(class(self));
             end
         end

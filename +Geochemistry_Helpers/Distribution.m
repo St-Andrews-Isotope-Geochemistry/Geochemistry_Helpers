@@ -91,6 +91,12 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator&matlab.mixin.Copyab
                 output(self_index) = sum(self(self_index).bin_midpoints.*self(self_index).probabilities);
             end
         end
+        function output = median(self)
+            output = NaN(numel(self),1);
+            for self_index = 1:numel(self)
+                output(self_index) = self(self_index).quantile(0.5);
+            end
+        end
         function output = standard_deviation(self)
             output = NaN(numel(self),1);
             for self_index = 1:numel(self)
