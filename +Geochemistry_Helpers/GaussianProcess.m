@@ -31,12 +31,15 @@ classdef GaussianProcess < handle & Geochemistry_Helpers.Collator
             
             self.kernel_function = self.kernel_functions(kernel);
         end
-        function runKernel(self,parameters)
+        function runKernel(self,parameters,inflation)
             self.parameters = parameters;
             self.covariance_matrix = self.kernel_function(self.queries.collate("location"),self.queries.collate("location")',self.parameters);
             if ~isempty(self.observations) && ~isempty(self.observations.collate("location"))
                 self.conditioned = true;
-                self.observation_approximations = self.observations.approximateGaussian(2);
+                if nargin<3
+                    inflation = 1;
+                end
+                self.observation_approximations = self.observations.approximateGaussian(inflation);
             
                 
                 self.observation_covariance_matrix = self.kernel_function(self.observations.collate("location"),self.observations.collate("location")',self.parameters)';
@@ -155,7 +158,7 @@ classdef GaussianProcess < handle & Geochemistry_Helpers.Collator
         function assignSamples(self)
             locations = self.queries.collate("location");
             for query_index = 1:numel(self.queries)
-                self.queries(query_index) = Geochemistry_Helpers.Distribution.fromSamples(self.observations(1).bin_edges,self.samples(:,query_index));
+                self.queries(query_index) = Geochemistry_Helpers.Distribution.fromSamples(self.observations(1).bin_edges,self.samples(:,query_index)).normalise();
                 if ~isempty(self.query_weights)
                     self.queries(query_index).probabilities = self.queries(query_index).probabilities.*self.query_weights(query_index,:);
                     self.queries(query_index).normalise();

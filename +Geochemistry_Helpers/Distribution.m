@@ -37,7 +37,14 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator&matlab.mixin.Copyab
                     mu = values(1);
                     sigma = values(2);                    
                     gaussian = (1./(sigma.*sqrt(2.*pi))).*(exp(-0.5.*(((self.bin_midpoints-mu)./sigma).^2)));
-                    self.probabilities = gaussian;                    
+                    self.probabilities = gaussian;
+                elseif type=="loggaussian" || type=="lognormal"
+                    assert(numel(values)==2,"Number of values must be 2 (mean and standard deviation)");
+                    self.bin_edges = bin_edges;
+                    mu = values(1);
+                    sigma = values(2);                    
+                    loggaussian = (1./(self.bin_midpoints.*sigma.*sqrt(2.*pi))).*(exp(-(((log(self.bin_midpoints)-mu).^2)./(2.*sigma.^2))));
+                    self.probabilities = loggaussian;
                 elseif type=="manual"
                     assert(numel(bin_edges)==numel(values)+1,"Number of elements in bin_edges must be one greater than the number of probabilities");
                     if size(bin_edges,1)==1
@@ -82,7 +89,20 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator&matlab.mixin.Copyab
             end
         end
         function self = normalise(self)
+            assert(sum(self.probabilities)~=0,"Sum of probabilities can not be 0");
             self.probabilities = self.probabilities/sum(self.probabilities);
+        end
+        function self = limit(self,limits)
+            assert(numel(limits)==2,"Must have array of lower and upper limit");
+            
+            if ~isnan(limits(1)) && ~isnan(limits(2))
+                assert(limits(2)>limits(1),"Limits must be in ascending order");
+                self.probabilities(self.bin_midpoints<limits(1) | self.midpoints>limits(2)) = 0;
+            elseif isnan(limits(1))
+                self.probabilities(self.bin_midpoints>limits(2)) = 0;
+            elseif isnan(limits(2))
+                self.probabilities(self.bin_midpoints<limits(1)) = 0;
+            end
         end
         
         function output = mean(self)
