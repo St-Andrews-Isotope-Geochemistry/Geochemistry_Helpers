@@ -75,6 +75,8 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator&matlab.mixin.Copyab
                     values = cumulative_probabilities-value;
                     if any(values==0)
                         output(self_index,value_index) = mean(self(self_index).bin_midpoints(values==0));
+                    elseif any(isnan(values))
+                        output(self_index,value_index) = NaN;
                     else
                         output(self_index,value_index) = self.piecewiseInterpolate(cumulative_probabilities',self(self_index).bin_edges,value);
                     end
