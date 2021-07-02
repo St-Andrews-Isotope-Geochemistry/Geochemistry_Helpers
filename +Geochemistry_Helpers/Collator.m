@@ -99,7 +99,7 @@ classdef Collator<handle
             
             output = reshape(self,number_of_elements);
         end
-        function assignToAll(self,parameter,value)
+        function self = assignToAll(self,parameter,value)
             %   assignToAll - Iterates over an array of objects to assign a value or object to the specified property
             %       input - The name of the parameter to assign to as a string
             %               The value/object to assign to the parameter
@@ -115,7 +115,7 @@ classdef Collator<handle
                 end
             end
         end
-        function assignToEach(self,parameter,values)
+        function self = assignToEach(self,parameter,values)
             %   assignToEach - Iterates over an array of objects and an array of values or objects to assign the latter to the former
             %       input - The name of the parameter to assign to as a string
             %               The array of values/objects to assign to the parameter (must be the same length as the number of Boron_pH objects).
@@ -142,19 +142,23 @@ classdef Collator<handle
         
         function number = numArgumentsFromSubscript(self,request,indexingContext)
             number = 1;
-%             number = length([request(1).subs{:}]);
         end
         function varargout = subsref(self,request)
             if numel(request)>1
                 switch request(1).type
                     case '.'
-                        request_string = request.subs;
+                        request_string = request(1).subs;
                         if numel(self)>1 && isprop(self(1),request_string)
                             collated = self.collate(request_string);
                             output = subsref(collated,request(2:end));
                             varargout{1} = output;
                             return
                         end
+                    case '()'
+                        collated = builtin('subsref',self,request(1));
+                        output = subsref(collated,request(2:end));
+                        varargout{1} = output;
+                        return
                 end
             else
                 switch request(1).type
