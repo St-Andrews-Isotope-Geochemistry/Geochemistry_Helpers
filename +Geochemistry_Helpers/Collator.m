@@ -156,8 +156,12 @@ classdef Collator<handle
                         end
                     case '()'
                         collated = builtin('subsref',self,request(1));
-                        output = subsref(collated,request(2:end));
-                        varargout{1} = output;
+                        try
+                            output = subsref(collated,request(2:end));
+                            varargout{1} = output;
+                        catch
+                            subsref(collated,request(2:end));
+                        end
                         return
                 end
             else
@@ -170,7 +174,11 @@ classdef Collator<handle
                         end
                 end
             end
-            [varargout{1:nargout}] = builtin('subsref',self,request);
+            try
+                [varargout{1:nargout}] = builtin('subsref',self,request);
+            catch
+                builtin('subsref',self,request);
+            end
         end
     end
 end
