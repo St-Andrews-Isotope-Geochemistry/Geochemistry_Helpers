@@ -50,6 +50,9 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator&matlab.mixin.Copyab
                     if size(bin_edges,1)==1
                         bin_edges = bin_edges';
                     end
+                    if size(values,1)==1
+                        values = values';
+                    end
                     self.bin_edges = bin_edges;
                     self.probabilities = values;
                 elseif type=="subsample"
@@ -212,7 +215,9 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator&matlab.mixin.Copyab
         
         % Display
         function plot(self,varargin)
-            plot(self.bin_midpoints,self.probabilities,varargin{:});
+            for self_index = 1:numel(self)
+                plot(self(self_index).bin_midpoints,self(self_index).probabilities,varargin{:});
+            end
         end
         function area(self,varargin)
             area(self.bin_midpoints,self.probabilities,varargin{:});
@@ -245,6 +250,13 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator&matlab.mixin.Copyab
                 end
             end
             output = output+"]";
+        end
+        function output = toStruct(self)
+            for self_index = 1:numel(self)
+                output(self_index).location = self(self_index).location;
+                output(self_index).bin_edges = self(self_index).bin_edges;
+                output(self_index).probabilities = self(self_index).probabilities;
+            end
         end
        
     end
