@@ -31,7 +31,7 @@ classdef GaussianProcess < handle & Geochemistry_Helpers.Collator
             
             self.kernel_function = self.kernel_functions(kernel);
         end
-        function runKernel(self,parameters,inflation)
+        function self = runKernel(self,parameters,inflation)
             self.parameters = parameters;
             self.covariance_matrix = self.kernel_function(self.queries.collate("location"),self.queries.collate("location")',self.parameters);
             if ~isempty(self.observations) && ~isempty(self.observations.collate("location"))
@@ -62,7 +62,7 @@ classdef GaussianProcess < handle & Geochemistry_Helpers.Collator
             end
             self.assignSamples();
         end
-        function reweight(self,method,number_of_samples)
+        function self = reweight(self,method,number_of_samples)
             if nargin<2
                 method = "rejection";
             end
@@ -155,7 +155,7 @@ classdef GaussianProcess < handle & Geochemistry_Helpers.Collator
             suprema = max(ratio,[],1);
             supremum = prod(suprema);
         end
-        function assignSamples(self)
+        function self = assignSamples(self)
             locations = self.queries.collate("location");
             for query_index = 1:numel(self.queries)
                 self.queries(query_index) = Geochemistry_Helpers.Distribution.fromSamples(self.observations(1).bin_edges,self.samples(:,query_index)).normalise();

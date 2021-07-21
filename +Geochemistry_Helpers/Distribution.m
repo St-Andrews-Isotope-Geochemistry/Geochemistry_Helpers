@@ -93,9 +93,12 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator&matlab.mixin.Copyab
                 end
             end
         end
-        function self = normalise(self)
+        function self = normalise(self,value)
             assert(sum(self.probabilities)~=0,"Sum of probabilities can not be 0");
-            self.probabilities = self.probabilities/sum(self.probabilities);
+            if nargin<2
+                value = 1;
+            end
+            self.probabilities = value.*(self.probabilities/sum(self.probabilities));
         end
         function self = limit(self,limits)
             assert(numel(limits)==2,"Must have array of lower and upper limit");
