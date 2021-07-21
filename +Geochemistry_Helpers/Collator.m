@@ -119,10 +119,18 @@ classdef Collator<handle
             %   assignToEach - Iterates over an array of objects and an array of values or objects to assign the latter to the former
             %       input - The name of the parameter to assign to as a string
             %               The array of values/objects to assign to the parameter (must be the same length as the number of Boron_pH objects).
-            assert(numel(self)==numel(values),"Number of objects must equal the number of input values");
+            if size(values,1)>1
+                assert(numel(self)==size(values,1),"Number of objects must equal the number of input values");
+            else
+                assert(numel(self)==numel(values),"Number of objects must equal the number of input values");
+            end
             for index = 1:numel(self)
-                if isnumeric(values)
-                    self(index).(parameter) = values(index);
+                if all(isnumeric(values))
+                    if size(values,1)>1
+                        self(index).(parameter) = values(index,:);
+                    else
+                        self(index).(parameter) = values(index);
+                    end
                 else
                     self(index).(parameter) = copy(values(index));
                 end
@@ -144,40 +152,43 @@ classdef Collator<handle
             number = 1;
         end
         function varargout = subsref(self,request)
-            if numel(request)>1
                 switch request(1).type
                     case '.'
                         request_string = request(1).subs;
-                        if numel(self)>1 && isprop(self(1),request_string)
+                        if ismethod(self(1),request_string)
+                            try
+                                varargout = {builtin('subsref',self,request)};
+                                if iscell(varargout{1})
+                                    varargout = varargout{:};
+                                end
+                            catch
+                                builtin('subsref',self,request);
+                            end
+                            return
+                        elseif (numel(self)>1 && isprop(self(1),request_string))
                             collated = self.collate(request_string);
-                            output = subsref(collated,request(2:end));
-                            varargout{1} = output;
+                            if size(request(2:end),2)>0
+                                varargout = {subsref(collated,request(2:end))};
+                            else
+                                varargout = {collated};
+                            end
                             return
                         end
                     case '()'
                         collated = builtin('subsref',self,request(1));
-                        try
-                            output = subsref(collated,request(2:end));
-                            varargout{1} = output;
-                        catch
-                            subsref(collated,request(2:end));
+                        if size(request(2:end),2)>0
+                            varargout = {subsref(collated,request(2:end))};
+                        else
+                            varargout = {collated};
                         end
                         return
                 end
-            else
-                switch request(1).type
-                    case '.'
-                        request_string = request.subs;
-                        if numel(self)>1 && isprop(self(1),request_string)
-                            varargout{1} = self.collate(request_string);
-                            return
-                        end
-                end
-            end
             try
                 [varargout{1:nargout}] = builtin('subsref',self,request);
+                return
             catch
                 builtin('subsref',self,request);
+                return
             end
         end
     end
