@@ -174,7 +174,7 @@ classdef Sampler < handle&Geochemistry_Helpers.Distribution
         end
         
         function [self,samples] = shuffle(self)
-            for self_index = 1:numel(self);
+            for self_index = 1:numel(self)
                 [~,sort_by] = sort(rand(numel(self(self_index).samples),1));
                 self(self_index).samples = self(self_index).samples(sort_by);
                 samples = self(self_index).samples;
@@ -184,6 +184,19 @@ classdef Sampler < handle&Geochemistry_Helpers.Distribution
             distribution = Geochemistry_Helpers.Distribution(bin_edges,"manual",histcounts(self.samples,bin_edges));
         end
         
+        function output = resample(self,weights,number_of_samples)
+            assert(numel(weights)==numel(self.samples),"Number of weights must equal number of samples");
+            [sorted,sorted_indices] = sort(weights);
+            sorted_indices_sampler = Geochemistry_Helpers.Sampler(0:numel(weights),"manual",sorted./sum(sorted),"latin_hypercube");
+            sorted_indices_sampler.getSamples(number_of_samples);
+            sampled_indices = sorted_indices(ceil(sorted_indices_sampler.samples));
+            resamples =  self.samples(sampled_indices);
+            
+%             samples = resamples;
+            indices = sampled_indices;
+            
+            output = {resamples,indices};
+        end
         
         function output = where(self,boolean)
             assert(boolean.type=="subsample","Must be subsample");
@@ -226,6 +239,20 @@ classdef Sampler < handle&Geochemistry_Helpers.Distribution
             elseif nargin==3
                 histogram(self.samples,number_of_bins,'Normalization',normalisation);
             end
+        end
+    end
+    methods (Static=true)
+        function output = fromSamples(bin_edges,samples,method)
+            if isnan(bin_edges)
+                value_range = range(samples);
+                bin_edges = linspace(nanmin(samples)-0.2*value_range,nanmax(samples)+0.2*value_range,101);
+            elseif isscalar(bin_edges)
+                value_range = range(samples);
+                number_of_bins = bin_edges;
+                bin_edges = linspace(nanmin(samples)-0.2*value_range,nanmax(samples)+0.2*value_range,number_of_bins);
+            end
+            output = Geochemistry_Helpers.Sampler(bin_edges,"manual",histcounts(samples,bin_edges,'Normalization','Probability')',method);
+            output.samples = samples;
         end
     end
 end
