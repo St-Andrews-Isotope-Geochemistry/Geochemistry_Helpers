@@ -38,6 +38,9 @@ classdef Sampler < handle&Geochemistry_Helpers.Distribution
                 elseif self(self_index).method=="latin_hypercube"
                     samples = self(self_index).getMedianLatinHypercubeSamples(number_of_samples);
                     self(self_index).samples = samples;
+                elseif self(self_index).method=="latin_hypercube_random"
+                    samples = self(self_index).getRandomLatinHypercubeSamples(number_of_samples);
+                    self(self_index).samples = samples;
                 else
                     error("Method unknown");
                 end
