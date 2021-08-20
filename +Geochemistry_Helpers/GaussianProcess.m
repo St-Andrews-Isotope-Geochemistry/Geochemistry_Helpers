@@ -166,5 +166,37 @@ classdef GaussianProcess < handle & Geochemistry_Helpers.Collator
                 self.queries(query_index).location = locations(query_index);
             end
         end
+        
+        function self = plotSamples(self,indices,varargin)
+            if nargin<3
+                varargin = {};
+            end
+            if nargin>1 && all(~isnan(indices))
+                plot(self.queries.location,self.samples(indices,:)',varargin{:});
+            else
+                plot(self.queries.location,self.samples,varargin{:});
+            end
+        end
+        function self = plotObservations(self)
+            for observation_index = 1:numel(self.observations)
+                plot([self.observations(observation_index).location,self.observations(observation_index).location],[self.observations(observation_index).quantile(0.025),self.observations(observation_index).quantile(0.975)],'k','LineWidth',2);
+            end
+        end
+        function self = plotObservationApproximations(self,varargin)
+            if nargin<2
+                varargin = {};
+            end
+            for observation_index = 1:numel(self.observation_approximations)
+                plot([self.observation_approximations(observation_index).location,self.observation_approximations(observation_index).location],[self.observation_approximations(observation_index).quantile(0.025),self.observation_approximations(observation_index).quantile(0.975)],varargin{:});
+            end
+        end
+        function self = plotWindow(self,colour,varargin)
+            assert(nargin>=2,"Must specify colour");
+            if nargin<3
+                varargin = {};
+            end
+%             plot([self.queries.location;self.queries.location]',[self.queries.quantile(0.025)';self.queries.quantile(0.975)']',varargin{:});
+            patch([self.queries.location,fliplr(self.queries.location)],[self.queries.quantile(0.025)',fliplr(self.queries.quantile(0.975)')],colour,varargin{:});
+        end
     end
 end
