@@ -155,22 +155,18 @@ classdef Collator<handle
                 switch request(1).type
                     case '.'
                         request_string = request(1).subs;
-                        if ismethod(self(1),request_string)
-                            try
-                                varargout = {builtin('subsref',self,request)};
-                                if iscell(varargout{1})
-                                    varargout = varargout{:};
-                                end
-                            catch
-                                builtin('subsref',self,request);
-                            end
-                            return
-                        elseif (numel(self)>1 && isprop(self(1),request_string))
+                        if (numel(self)>1 && isprop(self(1),request_string))
                             collated = self.collate(request_string);
                             if size(request(2:end),2)>0
                                 varargout = {subsref(collated,request(2:end))};
                             else
                                 varargout = {collated};
+                            end
+                            return
+                        else
+                            varargout = {builtin('subsref',self,request)};
+                            if iscell(varargout{1})
+                                varargout = varargout{:};
                             end
                             return
                         end
