@@ -112,6 +112,9 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator&matlab.mixin.Copyab
                 self.probabilities(self.bin_midpoints<limits(1)) = 0;
             end
         end
+        function self = truncate(self,value)
+            self.probabilities(self.probabilities<=value) = 0;
+        end
         
         function output = mean(self)
             output = NaN(numel(self),1);
@@ -168,9 +171,10 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator&matlab.mixin.Copyab
             end
             for self_index = 1:numel(self)
                 output(self_index) = Geochemistry_Helpers.Distribution(self(self_index).bin_edges,"Gaussian",[self(self_index).mean(),self(self_index).standard_deviation()*inflation]).normalise();
+                output(self_index).location = self(self_index).location;
             end
         end
-        function smooth(self,widths,preserves)
+        function self = smooth(self,widths,preserves)
             if nargin<2
                 widths = 3;
             end
@@ -217,12 +221,12 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator&matlab.mixin.Copyab
         end
         
         % Display
-        function plot(self,varargin)
+        function self = plot(self,varargin)
             for self_index = 1:numel(self)
                 plot(self(self_index).bin_midpoints,self(self_index).probabilities,varargin{:});
             end
         end
-        function area(self,varargin)
+        function self = area(self,varargin)
             area(self.bin_midpoints,self.probabilities,varargin{:});
         end
         function output = toJSON(self)
