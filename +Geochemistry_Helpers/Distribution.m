@@ -280,7 +280,7 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator&matlab.mixin.Copyab
                 number_of_bins = bin_edges;
                 bin_edges = linspace(nanmin(samples)-0.2*value_range,nanmax(samples)+0.2*value_range,number_of_bins);
             end
-            output = Geochemistry_Helpers.Distribution(bin_edges,"manual",histcounts(samples,bin_edges,'Normalization','Probability')');
+            output = Geochemistry_Helpers.Distribution(bin_edges,"manual",histcounts(samples,bin_edges,'Normalization','Probability')').normalise();
         end        
         function output = fromJSON(filename)
             file_raw = fileread(filename);
