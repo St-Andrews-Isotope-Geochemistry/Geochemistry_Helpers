@@ -169,8 +169,11 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator&matlab.mixin.Copyab
             if nargin<2
                 inflation = 1;
             end
+            if numel(inflation)==1
+                inflation = repelem(inflation,1,numel(self));
+            end
             for self_index = 1:numel(self)
-                output(self_index) = Geochemistry_Helpers.Distribution(self(self_index).bin_edges,"Gaussian",[self(self_index).mean(),self(self_index).standard_deviation()*inflation]).normalise();
+                output(self_index) = Geochemistry_Helpers.Distribution(self(self_index).bin_edges,"Gaussian",[self(self_index).mean(),self(self_index).standard_deviation()*inflation(self_index)]).normalise();
                 output(self_index).location = self(self_index).location;
             end
         end
@@ -268,11 +271,8 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator&matlab.mixin.Copyab
        
     end
     methods (Static)
-%         function output = create(type,value)
-%             output = Distribution(type,value);
-%         end
         function output = fromSamples(bin_edges,samples)
-            if isnan(bin_edges)
+            if isempty(bin_edges) || (numel(bin_edges)==1 && isnan(bin_edges))
                 value_range = range(samples);
                 bin_edges = linspace(nanmin(samples)-0.2*value_range,nanmax(samples)+0.2*value_range,101);
             elseif isscalar(bin_edges)
@@ -280,7 +280,7 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator&matlab.mixin.Copyab
                 number_of_bins = bin_edges;
                 bin_edges = linspace(nanmin(samples)-0.2*value_range,nanmax(samples)+0.2*value_range,number_of_bins);
             end
-            output = Geochemistry_Helpers.Distribution(bin_edges,"manual",histcounts(samples,bin_edges,'Normalization','Probability')').normalise();
+            output = Geochemistry_Helpers.Distribution(bin_edges,"manual",histcounts(samples,bin_edges,'Normalization','Probability')');
         end        
         function output = fromJSON(filename)
             file_raw = fileread(filename);
