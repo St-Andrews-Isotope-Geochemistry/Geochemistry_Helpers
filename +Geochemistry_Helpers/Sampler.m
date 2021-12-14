@@ -243,6 +243,16 @@ classdef Sampler < handle&Geochemistry_Helpers.Distribution
                 histogram(self.samples,number_of_bins,'Normalization',normalisation);
             end
         end
+        
+        function output = bootstrap(self,replicates)
+            resamples = self.resample(ones(size(self.samples)),replicates*numel(self.samples));
+            resamples_sampler = Geochemistry_Helpers.Sampler.fromSamples(self.bin_edges,resamples{1},"monte_carlo").shuffle();
+            shuffled_samples = reshape(resamples_sampler.samples,numel(self.samples),replicates);
+            
+            for output_index = 1:replicates
+                output(output_index) = Geochemistry_Helpers.Sampler.fromSamples(self.bin_edges,shuffled_samples(:,output_index),"monte_carlo");
+            end
+        end
     end
     methods (Static=true)
         function output = fromSamples(bin_edges,samples,method)
