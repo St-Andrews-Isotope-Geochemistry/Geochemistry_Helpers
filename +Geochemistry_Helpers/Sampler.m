@@ -98,6 +98,11 @@ classdef Sampler < handle&Geochemistry_Helpers.Distribution
             initial_number_of_samples = number_of_samples;
             maximum_number_of_samples = min([2*number_of_samples,number_of_samples+1000]);
             
+            if isempty(self.probabilities)
+                edges = [];
+                return
+            end
+            
             % Find out which bin to start at
             bin_start = 1;
             while self.probabilities(bin_start)==0
@@ -189,15 +194,18 @@ classdef Sampler < handle&Geochemistry_Helpers.Distribution
         
         function output = resample(self,weights,number_of_samples)
             assert(numel(weights)==numel(self.samples),"Number of weights must equal number of samples");
-            [sorted,sorted_indices] = sort(weights);
-            sorted_indices_sampler = Geochemistry_Helpers.Sampler(0:numel(weights),"manual",sorted./sum(sorted),"latin_hypercube");
-            sorted_indices_sampler.getSamples(number_of_samples);
-            sampled_indices = sorted_indices(ceil(sorted_indices_sampler.samples));
-            resamples =  self.samples(sampled_indices);
-            
-%             samples = resamples;
-            indices = sampled_indices;
-            
+            if numel(self.samples)==1
+                resamples = repelem(self.samples,number_of_samples);
+                indices = ones(number_of_samples,1);
+            else
+                [sorted,sorted_indices] = sort(weights);
+                sorted_indices_sampler = Geochemistry_Helpers.Sampler(0:numel(weights),"manual",sorted./sum(sorted),"latin_hypercube");
+                sorted_indices_sampler.getSamples(number_of_samples);
+                sampled_indices = sorted_indices(ceil(sorted_indices_sampler.samples));
+                resamples =  self.samples(sampled_indices);
+
+                indices = sampled_indices;
+            end
             output = {resamples,indices};
         end
         
@@ -245,12 +253,14 @@ classdef Sampler < handle&Geochemistry_Helpers.Distribution
         end
         
         function output = bootstrap(self,replicates)
-            resamples = self.resample(ones(size(self.samples)),replicates*numel(self.samples));
-            resamples_sampler = Geochemistry_Helpers.Sampler.fromSamples(self.bin_edges,resamples{1},"monte_carlo").shuffle();
-            shuffled_samples = reshape(resamples_sampler.samples,numel(self.samples),replicates);
-            
-            for output_index = 1:replicates
-                output(output_index) = Geochemistry_Helpers.Sampler.fromSamples(self.bin_edges,shuffled_samples(:,output_index),"monte_carlo");
+            for self_index = 1:numel(self)
+                resamples = self(self_index).resample(ones(size(self(self_index).samples)),replicates*numel(self(self_index).samples));
+                resamples_sampler = Geochemistry_Helpers.Sampler.fromSamples(self(self_index).bin_edges,resamples{1},"monte_carlo").shuffle();
+                shuffled_samples = reshape(resamples_sampler.samples,numel(self(self_index).samples),replicates);
+
+                for output_index = 1:replicates
+                    output(self_index,output_index) = Geochemistry_Helpers.Sampler.fromSamples(self(self_index).bin_edges,shuffled_samples(:,output_index),"monte_carlo");
+                end
             end
         end
     end
