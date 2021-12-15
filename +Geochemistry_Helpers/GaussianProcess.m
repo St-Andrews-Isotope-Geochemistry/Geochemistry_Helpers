@@ -111,37 +111,8 @@ classdef GaussianProcess < handle & Geochemistry_Helpers.Collator
                 error("Method unknown");
             end
             
-            original_queries = self.queries.copy();
             self.samples = new_samples;
             self.assignSamples();
-            
-%             ratio_output = ratio_normalised(rounded_samples);
-            
-            %%
-%             index = 2;
-%             figure(1);
-%             clf
-%             hold on
-%             self.observations(index).plot('r');
-%             self.observation_approximations(index).plot('g');
-%             for query_index = 1:numel(original_queries)
-%                 if self.queries(query_index).location == self.observations(index).location;
-%                     break
-%                 end
-%             end
-%             original_queries(query_index).plot('b');
-%             self.queries(query_index).plot('k');
-% %             plot(ratio_normalised,'m');
-% 
-%             original_queries(query_index).quantile(0.5);
-%             self.queries(query_index).quantile(0.5);
-%             
-%             %%
-%             figure(2);
-%             clf
-%             hold on
-%             plot(self.queries.collate("location"),new_samples(1:20,:),'b');            
-%             plot(self.observations.collate("location"),self.observations.mean(),'ok','MarkerFaceColor','k');
         end
         
         function supremum = getSupremum(self)
@@ -158,7 +129,12 @@ classdef GaussianProcess < handle & Geochemistry_Helpers.Collator
         function self = assignSamples(self)
             locations = self.queries.collate("location");
             for query_index = 1:numel(self.queries)
-                self.queries(query_index) = Geochemistry_Helpers.Distribution.fromSamples(self.observations(1).bin_edges,self.samples(:,query_index)).normalise();
+                if ~isempty(self.observations)
+                    bin_edges = self.observations(1).bin_edges;
+                else
+                    bin_edges = linspace(min(self.samples(:)),max(self.samples(:)),100);
+                end
+                self.queries(query_index) = Geochemistry_Helpers.Distribution.fromSamples(bin_edges,self.samples(:,query_index)).normalise();
                 if ~isempty(self.query_weights)
                     self.queries(query_index).probabilities = self.queries(query_index).probabilities.*self.query_weights(query_index,:);
                     self.queries(query_index).normalise();
