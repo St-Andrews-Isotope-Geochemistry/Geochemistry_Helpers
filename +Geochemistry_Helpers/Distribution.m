@@ -273,10 +273,10 @@ classdef Distribution < handle&Geochemistry_Helpers.Collator&matlab.mixin.Copyab
     methods (Static)
         function output = fromSamples(bin_edges,samples)
             if isempty(bin_edges) || (numel(bin_edges)==1 && isnan(bin_edges))
-                value_range = range(samples);
-                bin_edges = linspace(nanmin(samples)-0.2*value_range,nanmax(samples)+0.2*value_range,101);
+                value_range = max(samples)-min(samples);
+                bin_edges = linspace(min(samples,[],'omitnan')-0.2*value_range,max(samples,[],'omitnan')+0.2*value_range,101);
             elseif isscalar(bin_edges)
-                value_range = range(samples);
+                value_range = max(samples)-min(samples);
                 number_of_bins = bin_edges;
                 bin_edges = linspace(nanmin(samples)-0.2*value_range,nanmax(samples)+0.2*value_range,number_of_bins);
             end
